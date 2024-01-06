@@ -23,7 +23,6 @@
     "node-gyp": "^10.0.1",
     "node-osc": "^9.0.2",
     "node-window-manager": "^2.2.4",
-    "nodemon": "^3.0.2",
     "os2l": "^1.0.4",
     "pm2": "^5.3.0",
     "save": "^2.9.0",

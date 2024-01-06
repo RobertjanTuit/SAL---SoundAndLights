@@ -1,9 +1,0 @@
-{
-    "restartable": "false",
-    "delay": 500,
-    "ignore": [
-        ".git",
-        "node_modules/**/node_modules",
-        "soundswitch-data.json"
-    ]
-}
