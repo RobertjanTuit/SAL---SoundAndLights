@@ -13,9 +13,18 @@ import config from 'config';
 import quitOnSrcChange from './core/quitOnSrcChange.js';
 import { ProcessManager } from './core/ProcessManager.js';
 import { ResolumeWebClient } from './modules/ResolumeWebClient.js';
+import EventEmitter2 from 'eventemitter2';
 
 const appsConfig = config.get('apps');
 const settings = config.get('settings');
+
+class songStateManager extends EventEmitter2 {
+
+  constructor () {
+    super({ wildcard: true, ignoreErrors: true });
+
+  }
+}
 
 const soundSwitchClient = new SoundSwitchClient(stores.status, { port: appsConfig.soundSwitch.port, host: appsConfig.soundSwitch.host });
 const virtualDJServer = new VirtualDJServer(stores.status, { port: appsConfig.virtualDJ.port, host: appsConfig.virtualDJ.host });

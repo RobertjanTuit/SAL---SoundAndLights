@@ -18,7 +18,16 @@ const virtuaDJDeckType = types.model('VirtualDJDeck', {
   loop_roll: types.optional(types.number, 0),
   play: types.optional(types.string, ''),
   get_limiter: types.optional(types.number, 0),
-  masterdeck: types.optional(types.string, '')
+  masterdeck: types.optional(types.string, ''),
+  beatsFromBeginningOfSong: types.optional(types.number, 0),
+  beatsFromEndOfSong: types.optional(types.number, 0),
+  beatsFromBeginningOfPhase: types.optional(types.number, 0),
+  beatsFromEndOfPhase: types.optional(types.number, 0),
+  barsFromBeginningOfSong: types.optional(types.number, 0),
+  barsFromEndOfSong: types.optional(types.number, 0),
+  barsFromBeginningOfPhase: types.optional(types.number, 0),
+  barsFromEndOfPhase: types.optional(types.number, 0),
+  phase: types.optional(types.string, '')
 });
 
 const virtualDJStatusType = types.model('VirtualDJStatus', {
