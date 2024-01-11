@@ -73,17 +73,8 @@ export default class ProgramTerminal extends EventEmitter2 {
     this.resolumeOSCText = this.createText(document, names.statusResolumeOSC);
 
     this.vdjDecks = [{}, {}];
-    this.vdjDecks[0].text = this.createText(document, names.vdjDeck1, { x: 1, y: 0 });
-    this.vdjDecks[0].level = this.createText(document, names.vdjDeck1, { x: 1, y: 1, width: 5 });
-    this.vdjDecks[0].bpm = this.createText(document, names.vdjDeck1, { x: 6, y: 1, width: 5 });
-    this.vdjDecks[0].beatPos = this.createText(document, names.vdjDeck1, { x: 13, y: 1, width: 5 });
-    this.vdjDecks[0].elapsed = this.createText(document, names.vdjDeck1, { x: 21, y: 1, width: 8 });
-
-    this.vdjDecks[1].text = this.createText(document, names.vdjDeck2, { x: 1, y: 0 });
-    this.vdjDecks[1].level = this.createText(document, names.vdjDeck2, { x: 1, y: 1, width: 5 });
-    this.vdjDecks[1].bpm = this.createText(document, names.vdjDeck2, { x: 6, y: 1, width: 5 });
-    this.vdjDecks[1].beatPos = this.createText(document, names.vdjDeck2, { x: 13, y: 1, width: 5 });
-    this.vdjDecks[1].elapsed = this.createText(document, names.vdjDeck2, { x: 21, y: 1, width: 8 });
+    this.createDeck(document, 0, names.vdjDeck1);
+    this.createDeck(document, 1, names.vdjDeck2);
 
     this.logText = this.createTextBox(document, names.log, '');
     this.commandsText = this.createText(document, names.commands, { content: '^gQ^wuit | ^gF^wix Connected Apps | Toggle ^gL^wog |', contentHasMarkup: true });
@@ -102,6 +93,15 @@ export default class ProgramTerminal extends EventEmitter2 {
     this.updateTerminalFromVDJDeck1(stores.virtualDJDecks[0]);
     this.updateTerminalFromVDJDeck2(stores.virtualDJDecks[1]);
     this.updateFps(30);
+  }
+
+  createDeck (document, deck, name) {
+    this.vdjDecks[deck].text = this.createText(document, name, { x: 1, y: 0 });
+    this.vdjDecks[deck].level = this.createText(document, name, { x: 1, y: 1, width: 5 });
+    this.vdjDecks[deck].bpm = this.createText(document, name, { x: 6, y: 1, width: 5 });
+    this.vdjDecks[deck].beatPos = this.createText(document, name, { x: 13, y: 1, width: 5 });
+    this.vdjDecks[deck].elapsed = this.createText(document, name, { x: 21, y: 1, width: 8 });
+    this.vdjDecks[deck].phases = this.createText(document, name, { x: 1, y: 2, width: 20 });
   }
 
   updateTerminalFromStatus (globalStatus) {
@@ -133,12 +133,13 @@ export default class ProgramTerminal extends EventEmitter2 {
   }
 
   updateDeck (deckNr, deck) {
-    this.vdjDecks[deckNr].text.setContent(`${deck.get_filepath}`, true);
+    this.vdjDecks[deckNr].text.setContent(`^g${deck.get_title} ^w- ^b${deck.get_artist}`, true);
     this.vdjDecks[deckNr].level.setContent(`${this.toFixedString(deck.level, 2)}`, true);
     this.vdjDecks[deckNr].bpm.setContent(`${this.toFixedString(deck.get_bpm)}`, true);
     this.vdjDecks[deckNr].beatPos.setContent(`${this.toFixedString(deck.get_beatpos, 2)}`, true);
     // TODO: Use better method to turn timestamp into string, can go into negative as well
     this.vdjDecks[deckNr].elapsed.setContent(`${moment(Math.max(deck.get_time - (16 * 3600 * 1000))).format('HH:mm:ss.SSS')}`, true);
+    this.vdjDecks[deckNr].phases.setContent(`${deck.phase}`, true);
   }
 
   createText (document, id, options) {

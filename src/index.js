@@ -13,24 +13,22 @@ import config from 'config';
 import quitOnSrcChange from './core/quitOnSrcChange.js';
 import { ProcessManager } from './core/ProcessManager.js';
 import { ResolumeWebClient } from './modules/ResolumeWebClient.js';
-import EventEmitter2 from 'eventemitter2';
+import { SoundSwitchMidiController, VirtualDJMidi as VirtualDJMidiController } from './modules/VirtualDJMidiController.js';
 
 const appsConfig = config.get('apps');
 const settings = config.get('settings');
 
-class songStateManager extends EventEmitter2 {
-
-  constructor () {
-    super({ wildcard: true, ignoreErrors: true });
-
-  }
-}
-
+const soundSwithMidiController = new VirtualDJMidiController({ midiDeviceName: appsConfig.soundSwitch.midiDeviceName, midiMappings: appsConfig.soundSwitch.midiMappings, midiDebugNote: appsConfig.soundSwitch.midiDebugNote });
 const soundSwitchClient = new SoundSwitchClient(stores.status, { port: appsConfig.soundSwitch.port, host: appsConfig.soundSwitch.host });
+
 const virtualDJServer = new VirtualDJServer(stores.status, { port: appsConfig.virtualDJ.port, host: appsConfig.virtualDJ.host });
+const virtualDJMidiController = new SoundSwitchMidiController({ midiDeviceName: appsConfig.virtualDJ.midiDeviceName, midiMappings: appsConfig.virtualDJ.midiMappings, midiDebugNote: appsConfig.virtualDJ.midiDebugNote });
+
 const virtualDJSoundSwitchBridge = new VirtualDJSoundSwitchBridge(stores.status, soundSwitchClient, virtualDJServer);
+
 const resolumeOSCCLient = new ResolumeOSCCLient({ port: appsConfig.resolume.oscPort, host: appsConfig.resolume.oscHost });
 const resolumeWebClient = new ResolumeWebClient({ port: appsConfig.resolume.webPort, host: appsConfig.resolume.webHost });
+
 const programTerminal = new ProgramTerminal();
 const songCatalog = new SongCatalog({ reloadOnChange: appsConfig.virtualDJ.databaseReloadOnChange });
 const processManager = new ProcessManager(appsConfig);

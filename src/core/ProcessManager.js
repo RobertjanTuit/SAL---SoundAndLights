@@ -32,7 +32,11 @@ export class ProcessManager extends EventEmitter2 {
 
   async killProcess (appName) {
     const process = path.basename(this.getProcess(appName));
-    await exec(`taskkill /f /im ${process}`, { ignoreErrors: true });
+    try {
+      await exec(`taskkill /f /im ${process}`, { ignoreErrors: true });
+    } catch (err) {
+      this.logger.log(`Error killing process ${process}: ${err}`);
+    }
   }
 
   async startProcess (appName, onlyIfNotRunning = false) {
@@ -42,8 +46,10 @@ export class ProcessManager extends EventEmitter2 {
 
     const process = `"${this.getProcess(appName)}"`;
     try {
-      await exec(process);
-    } catch (err) { /* ignore */ }
+      exec(process);
+    } catch (err) {
+      this.logger.log(`Error starting process ${process}: ${err}`);
+    }
   }
 
   async closeConnectedApps (soundSwitch, virtualDJ, resolume) {

@@ -4,7 +4,12 @@
             "process": "C:\\Program Files\\SoundSwitch\\SoundSwitch.exe",
             "manageProcess": true,
             "port": 3333,
-            "host": "localhost"
+            "host": "localhost",
+            "midiDeviceName": "SoundSwitch",
+            "midiDebugNote": "",
+            "midiMappings":{
+                "playPause": { "note": 1 }
+            }
         },
         "virtualDJ": {
             "process": "C:\\Program Files\\VirtualDJ\\virtualdj.exe",
@@ -12,8 +17,21 @@
             "port": 4444,
             "host": "localhost",
             "databaseReloadOnChange": false,
+
             "killOnReloadQuit": true,
-            "startOnLaunch": true
+            "stopBeforeKill": true,
+
+            "startOnLaunch": true,
+            "playOnProcessStart": true,
+
+            "midiDeviceName": "VirtualDJ",
+            "midiDebugNote": "",
+            "midiMappings": {
+                "deck1Play": { "note": 1, "channel": 0 },
+                "deck1Stop": { "note": 2, "channel": 0 },
+                "deck2Play": { "note": 1, "channel": 1 },
+                "deck2Stop": { "note": 2, "channel": 1 }
+            }
         },
         "resolume": {
             "process": "C:\\Program Files\\Resolume Avenue\\Avenue.exe",
@@ -21,7 +39,12 @@
             "oscPort": 5555,
             "oscHost": "127.0.0.1",
             "webPort": 8080,
-            "webHost": "127.0.0.1"
+            "webHost": "127.0.0.1",
+            "layersAndClips":
+            {
+                "primaryContentLayer": { "name": "Content", "columnStart": 86 },
+                "secondaryContentLayer": { "name": "Content-2", "columnStart": 5 }
+            }
         }
     },
     "settings": {

@@ -13,9 +13,9 @@ import { readFile, writeFile } from 'fs/promises';
 export class SongCatalog extends EventEmitter2 {
   songs = {};
   databases = {};
+  logger = new Logger('SongCatalog');
   constructor ({ reloadOnChange }) {
     super({ wildcard: true, ignoreErrors: true });
-    this.logger = new Logger('SongCatalog');
     this.reloadOnChange = reloadOnChange;
   }
 
@@ -74,6 +74,8 @@ export class SongCatalog extends EventEmitter2 {
               this.logger.log(`Database changed, reloading...`);
               this.loadFromVirtualDJDatabases(databaseFilePath, true);
             }, 1000);
+          }).on('error', (error) => {
+            this.logger.log(`Error watching ^b${databaseFilePath}^w | ^r${error}`);
           });
         }
       }
@@ -124,5 +126,31 @@ export class SongCatalog extends EventEmitter2 {
       this.logger.log(`Loaded ${loadedSongs} songs.`);
     }
     this.writeSongDatabaseLog();
+  }
+
+  filterSongs (filter) {
+    const songs = [];
+    Object.entries(this.songs).forEach(([, song]) => {
+      if (filter(song)) {
+        songs.push(song);
+      }
+    });
+    return songs;
+  }
+
+  getSongByArtistTitle (artist, title) {
+    const songsFound = this.filterSongs((song) => song.artist === artist && song.title === title);
+    if (songsFound.length > 0) {
+      throw new Error(`Multiple songs found for ${artist} - ${title}`);
+    } else if (songsFound.length === 0) {
+      return null;
+    } else {
+      return songsFound[0];
+    }
+  }
+
+  getSong (filePath, artist, title) {
+    const song = this.songs[filePath];
+    return song != null ? song : this.getSongByArtistTitle(artist, title);
   }
 }

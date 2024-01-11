@@ -1,7 +1,7 @@
 /* eslint-disable no-case-declarations */
 /* eslint-disable no-cond-assign */
 import * as stores from '../stores.js';
-import { applySnapshot, getSnapshot, onSnapshot } from 'mobx-state-tree';
+import { applySnapshot, getSnapshot } from 'mobx-state-tree';
 import { Logger } from './Logger.js';
 
 export class Program {
@@ -50,13 +50,6 @@ export class Program {
     this.resolumeWebClient.on('close', () => {
       applySnapshot(stores.status, { ...stores.status, resolumeWeb: false });
     });
-
-    onSnapshot(stores.virtualDJStatus, (snapshot) => {
-    });
-    onSnapshot(stores.virtualDJDecks[0], (snapshot) => {
-    });
-    onSnapshot(stores.virtualDJDecks[1], (snapshot) => {
-    });
   }
 
   addVirtualDJDataToBuffer (data) {
@@ -96,14 +89,14 @@ export class Program {
     this.programTerminal.quit();
   }
 
-  lastFps = 60;
+  lastFps = this.maxFrameRate;
   async startLoop () {
     await this.mainLoop();
     const newTime = new Date().getTime();
     const elapsed = newTime - this.lastTime ?? 0;
     this.lastTime = new Date().getTime();
     if (elapsed) {
-      this.lastFps = ((this.lastFps * 18) + (1000.0 / elapsed)) / 19;
+      this.lastFps = ((this.lastFps * (this.maxFrameRate - 1)) + (1000.0 / elapsed)) / this.maxFrameRate;
       this.programTerminal.updateFps(this.lastFps);
     }
 
@@ -115,9 +108,31 @@ export class Program {
   }
 
   async mainLoop () {
+    this.updateLogs();
+    this.parseDataBuffer();
+    this.songDetection();
+    // this.phaseDetection();
+  }
+
+  // -----------------------------------------------------------------
+  songDetection () {
+    const deck = getSnapshot(stores.virtualDJDecks[0]);
+    const playingFile = deck.get_filepath;
+    if (this.deck0PlayingFile !== playingFile) {
+      this.deck0PlayingFile = playingFile;
+      this.song0 = this.songCatalog.getSong(playingFile, deck.get_artist, deck.get_title);
+      this.logger.log(`Deck 1: ^y${deck.get_title} ^w- ^y${deck.get_artist}`);
+    }
+  }
+  // -----------------------------------------------------------------
+
+  updateLogs () {
     if (Logger.logLines.length) {
       this.programTerminal.updateTerminalFromLogger();
     }
+  }
+
+  parseDataBuffer () {
     if (this.dataBuffer.length) {
       // TODO: Only initialize below when needed.
       const decks = [];
@@ -143,14 +158,15 @@ export class Program {
               case ('get_loop'):
               case ('get_text'):
               case ('get_bpm'):
+              case ('get_title'):
               case ('get_time'):
+              case ('get_artist'):
               case ('get_firstbeat'):
               case ('get_beatpos'):
               case ('get_filepath'):
               case ('masterdeck'):
               case ('get_limiter'):
               case ('loop_roll'):
-              case ('get_artist_title'):
               case ('get_year'):
               case ('get_composer'):
               case ('get_genre'):
