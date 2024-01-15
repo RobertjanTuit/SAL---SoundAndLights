@@ -4,6 +4,9 @@ import { Logger } from './Logger.js';
 import * as child from 'child_process';
 import util from 'util';
 import path from 'path';
+import { virtualDJDecks } from '../stores.js';
+import { getSnapshot } from 'mobx-state-tree';
+import { writeJSON } from '../utils.js';
 const exec = util.promisify(child.exec);
 
 export const AppNames = {
@@ -21,9 +24,10 @@ export class ProcessManager extends EventEmitter2 {
     [AppNames.virtualDJ]: null
   };
 
-  constructor (appsConfig) {
+  constructor ({ appsConfig, virtualDJMidiController }) {
     super({ wildcard: true, ignoreErrors: true });
     this.appsConfig = appsConfig;
+    this.virtualDJMidiController = virtualDJMidiController;
   }
 
   start () {
@@ -32,8 +36,20 @@ export class ProcessManager extends EventEmitter2 {
 
   async killProcess (appName) {
     const process = path.basename(this.getProcess(appName));
+    const deckData1 = getSnapshot(virtualDJDecks[0]);
+    const deckData2 = getSnapshot(virtualDJDecks[1]);
+    switch (appName) {
+      case AppNames.virtualDJ:
+      // TODO: Store Last tracks playing
+        await writeJSON('lastSessionDeckData1.json', deckData1);
+        await writeJSON('lastSessionDeckData2.json', deckData2);
+        this.virtualDJMidiController.deck1Stop();
+        this.virtualDJMidiController.deck2Stop();
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        break;
+    }
     try {
-      await exec(`taskkill /f /im ${process}`, { ignoreErrors: true });
+      await exec(`taskkill /im ${process}`, { ignoreErrors: true });
     } catch (err) {
       this.logger.log(`Error killing process ${process}: ${err}`);
     }
@@ -78,7 +94,7 @@ export class ProcessManager extends EventEmitter2 {
           }
         });
       }, 500);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 6000));
     }
     this.startProcess(AppNames.virtualDJ, true);
   }

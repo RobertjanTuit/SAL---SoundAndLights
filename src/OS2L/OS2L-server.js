@@ -2,33 +2,24 @@ import net from 'net';
 import EventEmitter2 from 'eventemitter2';
 import bonjour from 'bonjour';
 import { names, messages, eventNames } from './OS2L-constants.js';
+import { Logger } from '../core/Logger.js';
 
 /**
  * The OS2LServer handles incoming commands. Usally this is part of a DMX Software.
  */
 export class OS2LServer extends EventEmitter2 {
+  logger = new Logger('OS2LServer');
   /**
    * Creates an instance of an OS2LServer
    * @param {Object} options Options object
-   * @param {Number} options.port Port to listen on
-   * @param {Boolean} [options.doPublish] Should the server publish itself to DNS-SD
    */
-  constructor (options = { port: 1503 }, on = null) {
+  constructor (port = 1503, host = '127.0.0.1', doPublish = true) {
     super({ wildcard: true, ignoreErrors: true });
 
     // Option parameters
-    this.port = 1503;
-    this.doPublish = true;
-
-    if (typeof options !== 'object') throw new Error(messages.badOptions);
-
-    if (names.port in options) {
-      this.port = Number(options.port);
-    }
-
-    if (names.doPublish in options) {
-      this.doPublish = Boolean(options.doPublish);
-    }
+    this.port = port;
+    this.host = host;
+    this.doPublish = doPublish;
 
     // Other attributes
     this.net = null;
@@ -40,6 +31,7 @@ export class OS2LServer extends EventEmitter2 {
    * @param {Function} [callback] Is called when the server started listening.
    */
   start (callback = null) {
+    // this.logger.log(`Starting OS2L Server on port ${this.port}`);
     return new Promise((resolve, reject) => {
       if (this.net) {
         const err = new Error();
@@ -50,19 +42,21 @@ export class OS2LServer extends EventEmitter2 {
 
       this.createNetServer();
 
-      this.handleNetError(reject);
+      this.handleEvents(reject);
 
       this.netListen(callback, resolve);
 
       this.emit(eventNames.listening, this.port);
 
       if (this.doPublish) {
+        bonjour().unpublishAll();
         this.service = bonjour().publish({
           name: names.os2l,
           type: names.os2l,
-          port: this.port
+          port: this.port,
+          host: this.host
         });
-        this.emit(eventNames.published, this.port);
+        this.emit(eventNames.published, this.host + ':' + this.port);
       }
 
       this.emit(eventNames.started);
@@ -70,7 +64,7 @@ export class OS2LServer extends EventEmitter2 {
   }
 
   netListen (callback, resolve) {
-    this.net.listen(this.port, () => {
+    this.net.listen(this.port, this.host, () => {
       if (callback) {
         callback();
       }
@@ -78,10 +72,27 @@ export class OS2LServer extends EventEmitter2 {
     });
   }
 
-  handleNetError (reject) {
-    this.net.on(eventNames.error, err => {
-      this.emit(eventNames.error, err);
-      reject(err);
+  handleEvents (reject) {
+    this.net.on(eventNames.error, msg => {
+      this.logger.log('^rOS2L: ^w' + msg);
+      this.emit(eventNames.error, msg);
+      reject(msg);
+    });
+    this.net.on('close', msg => {
+      this.logger.log('^rOS2L close: ^w' + msg);
+      reject(msg);
+    });
+    this.net.on('listening', msg => {
+      this.logger.log('^rOS2L listening: ^w' + JSON.stringify(this.net.address()));
+      reject(msg);
+    });
+    this.net.on('drop', msg => {
+      this.logger.log('^rOS2L drop: ^w' + msg);
+      reject(msg);
+    });
+    this.net.on('connection', msg => {
+      this.logger.log('^rOS2L connection: ^w' + msg);
+      reject(msg);
     });
   }
 

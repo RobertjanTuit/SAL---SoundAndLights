@@ -5,11 +5,11 @@ import { OS2LServer } from '../OS2L/OS2L-server.js';
 import EventEmitter2 from 'eventemitter2';
 
 export class VirtualDJServer extends EventEmitter2 {
-  logger = new Logger('VirtualDJ');
-  constructor (statusStore, options = { port: 4444 }) {
+  logger = new Logger('VirtualDJServer');
+  constructor (statusStore, options = { port: 4444, host: '127.0.0.1' }) {
     super({ wildcard: true, ignoreErrors: true });
     this.statusStore = statusStore;
-    this.os2lServer = new OS2LServer(options);
+    this.os2lServer = new OS2LServer(options.port, options.host);
     this.os2lServer.on('*', (data) => {
       switch (this.os2lServer.event) {
         case eventNames.error:
@@ -31,7 +31,7 @@ export class VirtualDJServer extends EventEmitter2 {
           // this.logger.log(`^bOS2LServer^w data: ^g${JSON.stringify(data).substring(0, 200)}`);
           break;
         case eventNames.published:
-          this.logger.log(`BonJour Published on port ^g${JSON.stringify(data)}`);
+          this.logger.log(`BonJour Published for port ^g${JSON.stringify(data)}`);
           break;
         case eventNames.disconnected:
           this.connected = false;
@@ -47,7 +47,7 @@ export class VirtualDJServer extends EventEmitter2 {
   }
 
   async send (data) {
-    await this.os2lServer.send(data);
+    this.os2lServer.send(data);
   }
 
   async start () {

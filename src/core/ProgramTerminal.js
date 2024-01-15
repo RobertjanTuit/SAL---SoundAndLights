@@ -1,11 +1,11 @@
 /* eslint-disable no-new */
-import termkit from 'terminal-kit';
 import moment from 'moment';
 import { names } from '../constants.js';
 import { onSnapshot } from 'mobx-state-tree';
 import * as stores from '../stores.js';
 import { Logger } from '../core/Logger.js';
 import EventEmitter2 from 'eventemitter2';
+import termkit from 'terminal-kit';
 export const term = termkit.terminal;
 
 const version = process.env.npm_package_version;
