@@ -42,6 +42,7 @@ const program = new Program({ resolumeWebClient, processManager, appsConfig, vir
 program.start();
 
 // DEBUG
+// console.log(config);
 // soundSwitchClient.connect();
 // virtualDJServer.start();
 // setInterval(() => {
@@ -58,5 +59,8 @@ quitOnSrcChange(settings, program, async () => {
 });
 
 if (appsConfig.virtualDJ.startOnLaunch) {
+  if (processManager.isRunning.virtualDJ) {
+    await processManager.killProcess('virtualDJ');
+  }
   processManager.startProcess('virtualDJ', true);
 }

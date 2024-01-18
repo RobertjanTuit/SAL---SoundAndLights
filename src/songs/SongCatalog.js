@@ -96,7 +96,7 @@ export class SongCatalog extends EventEmitter2 {
         const filePath = songElement._attributes.FilePath;
         const song = {
           filePath,
-          author: songElement.Tags?._attributes.Author,
+          artist: songElement.Tags?._attributes.Author,
           title: songElement.Tags?._attributes.Title,
           album: songElement.Tags?._attributes.Album,
           trackNumber: songElement.Tags?._attributes.TrackNumber,
@@ -140,8 +140,8 @@ export class SongCatalog extends EventEmitter2 {
 
   getSongByArtistTitle (artist, title) {
     const songsFound = this.filterSongs((song) => song.artist === artist && song.title === title);
-    if (songsFound.length > 0) {
-      throw new Error(`Multiple songs found for ${artist} - ${title}`);
+    if (songsFound.length > 1) {
+      this.logger.log(`Multiple songs found for ${artist} - ${title}`);
     } else if (songsFound.length === 0) {
       return null;
     } else {

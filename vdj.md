@@ -2,12 +2,17 @@ VDJ Stuff:
 
 # VDJ send os2l message for change of track on deck 1 and 2
 
+keyboard init
+os2l_button "pong" & deck master video_fx true SpoutSender & video_output off
+& deck master effect_active "ableton link"
 -----------------------------------------------------------
+
 (repeat_start_instant 'rsiPulseCheck' 85ms & (deck 1 load_pulse ? nothing : (wait 500ms & deck 1 get_filepath & param_cast string & param_add '::[SONG1]' & param_cast & os2l_button)) & (deck 2 load_pulse ? nothing : (wait 500ms & deck 2 get_filepath & param_cast string & param_add '::[SONG2]' & param_cast & os2l_button)))
 & (repeat_start_instant 'rsiPulseCheck2' 190ms & (deck 1 load_pulse ? nothing : (get_vdj_folder & param_add '::[VDJHOME]' & param_cast & os2l_button)) & (deck 2 load_pulse ? nothing : (get_vdj_folder & param_add '::[VDJHOME]' & param_cast & os2l_button)))
 & (set 'activeDeck' `get_activeDeck` & repeat_start 'checkActiveDeck' 190ms & param_equal `get_var activeDeck` `get_activeDeck` ? nothing : set 'activeDeck' `get_activeDeck` & param_cast string & param_add '::[MASTER]' & os2l_button)
 
 # 1-button1
+
 (deck 1 get_filepath & param_cast string & param_add '::[SONG1]' & param_cast & os2l_button) & (deck 2 get_filepath & param_cast string & param_add '::[SONG2]' & param_cast & os2l_button) & (get_activeDeck & param_cast string & param_add '::[MASTER]' & os2l_button)
 
 # no longer needed

@@ -108,20 +108,47 @@ export class Program {
   }
 
   async mainLoop () {
+    this.deck0State = getSnapshot(stores.virtualDJDecks[0]);
+    this.deck1State = getSnapshot(stores.virtualDJDecks[1]);
     this.updateLogs();
     this.parseDataBuffer();
     this.songDetection();
+    this.bpmDetection();
     // this.phaseDetection();
+  }
+
+  bpmDetection () {
+    const masterState = this.deck0State.masterdeck === 'on' ? this.deck0State : this.deck1State;
+    const beatSync = (Math.floor(masterState.get_beatpos) % 16) === 0;
+    if (beatSync !== this.lastBeatSync) {
+      this.lastBeatSync = beatSync;
+      if (beatSync) {
+        // this.logger.log(`Deck1 BeatSync: ${beatSync}`);
+        this.resolumeWebClient.resync();
+      }
+      return;
+    }
+    if (masterState.get_bpm !== this.lastBpm) {
+      this.lastBpm = masterState.get_bpm;
+      // this.logger.log(`BPM: ^y${this.lastBpm}`);
+      this.resolumeWebClient.bpm(this.lastBpm);
+    }
   }
 
   // -----------------------------------------------------------------
   songDetection () {
-    const deck = getSnapshot(stores.virtualDJDecks[0]);
-    const playingFile = deck.get_filepath;
-    if (this.deck0PlayingFile !== playingFile) {
-      this.deck0PlayingFile = playingFile;
-      this.song0 = this.songCatalog.getSong(playingFile, deck.get_artist, deck.get_title);
-      this.logger.log(`Deck 1: ^y${deck.get_title} ^w- ^y${deck.get_artist}`);
+    const playingFile0 = this.deck0State.get_filepath + '|' + this.deck0State.get_title + '|' + this.deck0State.get_artist;
+    if (this.deck0PlayingFile !== playingFile0) {
+      this.deck0PlayingFile = playingFile0;
+      const song = this.songCatalog.getSong(this.deck0State.get_filepath, this.deck0State.get_artist, this.deck0State.get_title);
+      if (song !== this.lastSong0) {
+        this.lastSong0 = song;
+        if (song != null) {
+          this.logger.log(`Deck 1: ^y${this.lastSong0.title} ^w- ^y${this.lastSong0.artist}`);
+        } else if (this.deck0State.get_title != null && this.deck0State.get_artist != null) {
+        // this.logger.log(`Deck1: ^rCould not find song in catalog - ^y${this.deck0State.get_title} ^w- ^y${this.deck0State.get_artist}`);
+        }
+      }
     }
   }
   // -----------------------------------------------------------------
@@ -171,6 +198,10 @@ export class Program {
               case ('get_composer'):
               case ('get_genre'):
               case ('get_album'):
+                // if (prop === 'masterdeck') {
+                //   this.logger.log(JSON.stringify(data));
+                // }
+
                 decks[deckNr - 1][prop] = data.value;
                 break;
               case (''): // ignore the rest

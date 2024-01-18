@@ -51,6 +51,7 @@ export class ResolumeWebClient extends EventEmitter2 {
         // initial data of all: resolume-web-composition.json
         // this.composition = data;
         this.bpmId = data.tempocontroller.tempo.id;
+        this.resyncId = data.tempocontroller.resync.id;
         this.logger.log(`bpm.id: ${this.bpmId}`);
       } else {
         this.logger.log(`message: [:${ev.data.length}] ${ev.data.substring(0, 200)}`);
@@ -81,6 +82,18 @@ export class ResolumeWebClient extends EventEmitter2 {
       return `/api/v1/composition/thumbnail/dummy`;
     } else {
       return `/api/v1/composition/clips/by-id/${id}/thumbnail/${lastUpdated}`;
+    }
+  }
+
+  resync () {
+    if (this.resyncId) {
+      this.action('trigger', this.resyncId, true);
+    }
+  }
+
+  bpm (value) {
+    if (this.bpmId) {
+      this.action('set', this.bpmId, value);
     }
   }
 

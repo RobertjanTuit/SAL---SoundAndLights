@@ -1,0 +1,14 @@
+{
+    "apps": {
+        "virtualDJ": {
+            "killOnReloadQuit": true,
+            "stopBeforeKill": true,
+
+            "startOnLaunch": true,
+            "restoreOnProcessStart": true
+        }
+    },
+    "settings": {
+        "quitOnSrcChange": true
+    }
+}

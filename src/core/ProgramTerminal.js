@@ -139,7 +139,7 @@ export default class ProgramTerminal extends EventEmitter2 {
     this.vdjDecks[deckNr].beatPos.setContent(`${this.toFixedString(deck.get_beatpos, 2)}`, true);
     // TODO: Use better method to turn timestamp into string, can go into negative as well
     this.vdjDecks[deckNr].elapsed.setContent(`${moment(Math.max(deck.get_time - (16 * 3600 * 1000))).format('HH:mm:ss.SSS')}`, true);
-    this.vdjDecks[deckNr].phases.setContent(`${deck.phase}`, true);
+    this.vdjDecks[deckNr].phases.setContent(`${deck.get_filepath}`, true);
   }
 
   createText (document, id, options) {
