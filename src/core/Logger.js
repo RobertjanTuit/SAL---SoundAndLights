@@ -85,9 +85,6 @@ export class Logger {
 }
 
 function archiveLogFiles (logFile, ansiLogFile) {
-  if (existsSync('logs/archive') === false) {
-    mkdirSync('logs/archive');
-  }
   if (existsSync(logFile)) {
     unlinkSync(logFile);
   }

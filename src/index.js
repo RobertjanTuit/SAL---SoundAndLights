@@ -14,9 +14,13 @@ import quitOnSrcChange from './core/quitOnSrcChange.js';
 import { ProcessManager } from './core/ProcessManager.js';
 import { ResolumeWebClient } from './modules/ResolumeWebClient.js';
 import { SoundSwitchMidiController, VirtualDJMidi as VirtualDJMidiController } from './modules/VirtualDJMidiController.js';
-import { Logger } from './core/Logger.js';
 import termkit from 'terminal-kit';
+import { existsSync, mkdirSync } from 'node:fs';
 export const term = termkit.terminal;
+
+if (!existsSync('logs')) {
+  mkdirSync('logs');
+}
 
 const appsConfig = config.get('apps');
 const settings = config.get('settings');
@@ -38,19 +42,7 @@ const songCatalog = new SongCatalog({ reloadOnChange: appsConfig.virtualDJ.datab
 const processManager = new ProcessManager({ appsConfig, virtualDJMidiController, virtualDJServer });
 
 const program = new Program({ resolumeWebClient, processManager, appsConfig, virtualDJServer, soundswitchClient: soundSwitchClient, virtualDJSoundSwitchBridge, songCatalog, programTerminal, resolumeOSCCLient });
-// console.log(JSON.stringify(appsConfig.virtualDJ.midiMappings, null, 2));
 program.start();
-
-// DEBUG
-// console.log(config);
-// soundSwitchClient.connect();
-// virtualDJServer.start();
-// setInterval(() => {
-//  while (Logger.logLines && Logger.logLines.length) {
-//    term(Logger.logLines.shift() + '\n');
-//  }
-// }, 1000);
-// END DEBUG
 
 quitOnSrcChange(settings, program, async () => {
   if (appsConfig.virtualDJ.killOnReloadQuit) {
