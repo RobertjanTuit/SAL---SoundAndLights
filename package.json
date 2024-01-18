@@ -4,9 +4,9 @@
   "description": "Sound and Lights - OS2L Open Sound to Light - OSC Open Sound Control",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "set NODE_ENV=development&&node src/index.js NODE_ENV=development",
-    "watch": "npx forever src/index.js"
+    "start": "set NODE_ENV=default&&node src/index.js",
+    "basement": "set NODE_ENV=basement&&node src/index.js",
+    "dev": "set NODE_ENV=development&&node src/index.js"
   },
   "author": "",
   "license": "ISC",
