@@ -8,7 +8,8 @@ import { existsSync, statSync, watch } from 'fs';
 import { Logger } from '../core/Logger.js';
 import drivelist from 'drivelist';
 import networkDrive from 'windows-network-drive';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile } from 'fs/promises';
+import { writeJSON } from '../utils.js';
 
 export class SongCatalog extends EventEmitter2 {
   songs = {};
@@ -57,7 +58,7 @@ export class SongCatalog extends EventEmitter2 {
   }
 
   writeSongDatabaseLog () {
-    writeFile('songDatabase.json', JSON.stringify(this.songs, null, 2));
+    writeJSON('logs/songDatabase.json', this.songs);
   }
 
   async processVirtualDJPath (path) {

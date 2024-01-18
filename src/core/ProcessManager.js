@@ -40,9 +40,8 @@ export class ProcessManager extends EventEmitter2 {
     const deckData2 = getSnapshot(virtualDJDecks[1]);
     switch (appName) {
       case AppNames.virtualDJ:
-      // TODO: Store Last tracks playing
-        await writeJSON('lastSessionDeckData1.json', deckData1);
-        await writeJSON('lastSessionDeckData2.json', deckData2);
+        await writeJSON('logs/lastSessionDeckData1.json', deckData1);
+        await writeJSON('logs/lastSessionDeckData2.json', deckData2);
         this.virtualDJMidiController.deck1Stop();
         this.virtualDJMidiController.deck2Stop();
         await new Promise(resolve => setTimeout(resolve, 2000));

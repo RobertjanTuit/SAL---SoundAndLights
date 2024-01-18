@@ -91,7 +91,7 @@ export class OS2LServer extends EventEmitter2 {
       reject(msg);
     });
     this.net.on('connection', msg => {
-      this.logger.log('^rOS2L connection: ^w' + msg);
+      this.logger.log('^rOS2L connection: ^w' + JSON.stringify(msg.address()));
       reject(msg);
     });
   }

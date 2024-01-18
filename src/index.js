@@ -21,17 +21,17 @@ export const term = termkit.terminal;
 const appsConfig = config.get('apps');
 const settings = config.get('settings');
 
-const soundSwitchMidiController = new SoundSwitchMidiController({ midiDeviceName: appsConfig.soundSwitch.midiDeviceName, midiMappings: appsConfig.soundSwitch.midiMappings, midiDebugNote: appsConfig.soundSwitch.midiDebugNote });
-const soundSwitchClient = new SoundSwitchClient(status, { port: appsConfig.soundSwitch.port, host: appsConfig.soundSwitch.host });
+const soundSwitchMidiController = new SoundSwitchMidiController({ midiDeviceName: appsConfig.soundSwitch.midiDeviceName, midiMappings: appsConfig.soundSwitch.midiMappings, midiDebugNote: appsConfig.soundSwitch.midiDebugNote, logDetail: appsConfig.soundSwitch.midiLogDetail });
+const soundSwitchClient = new SoundSwitchClient(status, { port: appsConfig.soundSwitch.port, host: appsConfig.soundSwitch.host, logDetail: appsConfig.soundSwitch.os2lLogDetail });
 
-const virtualDJServer = new VirtualDJServer(status, { port: appsConfig.virtualDJ.port, host: appsConfig.virtualDJ.host });
+const virtualDJServer = new VirtualDJServer(status, { port: appsConfig.virtualDJ.port, host: appsConfig.virtualDJ.host, logDetail: appsConfig.virtualDJ.os2lLogDetail });
 
-const virtualDJMidiController = new VirtualDJMidiController({ midiDeviceName: appsConfig.virtualDJ.midiDeviceName, midiMappings: appsConfig.virtualDJ.midiMappings, midiDebugNote: appsConfig.virtualDJ.midiDebugNote });
+const virtualDJMidiController = new VirtualDJMidiController({ midiDeviceName: appsConfig.virtualDJ.midiDeviceName, midiMappings: appsConfig.virtualDJ.midiMappings, midiDebugNote: appsConfig.virtualDJ.midiDebugNote, logDetail: appsConfig.virtualDJ.midiLogDetail });
 
 const virtualDJSoundSwitchBridge = new VirtualDJSoundSwitchBridge(status, soundSwitchClient, virtualDJServer);
 
-const resolumeOSCCLient = new ResolumeOSCCLient({ port: appsConfig.resolume.oscPort, host: appsConfig.resolume.oscHost });
-const resolumeWebClient = new ResolumeWebClient({ port: appsConfig.resolume.webPort, host: appsConfig.resolume.webHost });
+const resolumeOSCCLient = new ResolumeOSCCLient({ port: appsConfig.resolume.oscPort, host: appsConfig.resolume.oscHost, logDetail: appsConfig.resolume.oscLogDetail });
+const resolumeWebClient = new ResolumeWebClient({ port: appsConfig.resolume.webPort, host: appsConfig.resolume.webHost, logDetail: appsConfig.resolume.webLogDetail });
 
 const programTerminal = new ProgramTerminal();
 const songCatalog = new SongCatalog({ reloadOnChange: appsConfig.virtualDJ.databaseReloadOnChange });

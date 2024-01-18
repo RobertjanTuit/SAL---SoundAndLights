@@ -1,15 +1,15 @@
 import { applySnapshot } from 'mobx-state-tree';
-import { Logger } from '../core/Logger.js';
+import { ComplexLogger, Logger } from '../core/Logger.js';
 import { eventNames } from '../OS2L/OS2L-constants.js';
 import { OS2LServer } from '../OS2L/OS2L-server.js';
 import EventEmitter2 from 'eventemitter2';
 
 export class VirtualDJServer extends EventEmitter2 {
-  logger = new Logger('VirtualDJServer');
-  constructor (statusStore, options = { port: 4444, host: '127.0.0.1' }) {
+  constructor (statusStore, options = { port: 4444, host: '127.0.0.1', logDetail: false }) {
     super({ wildcard: true, ignoreErrors: true });
     this.statusStore = statusStore;
     this.os2lServer = new OS2LServer(options.port, options.host);
+    this.logger = new ComplexLogger('VirtualDJServer', options.logDetail);
     this.os2lServer.on('*', (data) => {
       switch (this.os2lServer.event) {
         case eventNames.error:
@@ -28,6 +28,7 @@ export class VirtualDJServer extends EventEmitter2 {
           break;
         case eventNames.data:
           this.emit(eventNames.data, data);
+          this.logger.logDetail(data);
           // this.logger.log(`^bOS2LServer^w data: ^g${JSON.stringify(data).substring(0, 200)}`);
           break;
         case eventNames.published:

@@ -1,11 +1,23 @@
 {
     "apps": {
+        "soundSwitch": {
+            "midiLogDetail": true,
+            "os2lLogDetail": true
+        },
         "virtualDJ": {
             "killOnReloadQuit": true,
             "stopBeforeKill": true,
 
             "startOnLaunch": true,
-            "restoreOnProcessStart": true
+            "restoreOnProcessStart": true,
+
+            "midiLogDetail": true,
+            "os2lLogDetail": true
+        },
+        "resolume": {
+            "midiLogDetail": true,
+            "oscLogDetail": true,
+            "webLogDetail": true
         }
     },
     "settings": {

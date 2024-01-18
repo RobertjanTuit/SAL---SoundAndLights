@@ -1,18 +1,17 @@
 import EventEmitter2 from 'eventemitter2';
-import fs from 'fs';
 import { OS2LClient } from '../OS2L/OS2L-client.js';
 import { eventNames } from '../OS2L/OS2L-constants.js';
-import { Logger } from '../core/Logger.js';
+import { ComplexLogger } from '../core/Logger.js';
 import { applySnapshot } from 'mobx-state-tree';
 
 export class SoundSwitchClient extends EventEmitter2 {
   os2lClient = null;
   statusStore = null;
-  logger = new Logger('SoundSwitch');
 
   constructor (statusStore, options) {
     super({ wildcard: true, ignoreErrors: true });
     this.statusStore = statusStore;
+    this.logger = new ComplexLogger('SoundSwitch', options.logDetail);
     this.os2lClient = new OS2LClient(options);
     this.os2lClient.on('*', (data) => {
       switch (this.os2lClient.event) {
@@ -41,8 +40,8 @@ export class SoundSwitchClient extends EventEmitter2 {
           this.logger.log(`connected @ ^g${data}`);
           break;
         case eventNames.data:
+          this.logger.logDetail(data);
           this.emit('data', data);
-          fs.writeFileSync('soundswitch-data.json', JSON.stringify(data, null, 2));
           break;
         case eventNames.error:
           this.logger.log(`^rERROR: ^w${data}`);

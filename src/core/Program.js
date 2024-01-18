@@ -3,6 +3,8 @@
 import * as stores from '../stores.js';
 import { applySnapshot, getSnapshot } from 'mobx-state-tree';
 import { Logger } from './Logger.js';
+import { writeFile } from 'fs/promises';
+import { writeJSON } from '../utils.js';
 
 export class Program {
   dataBuffer = [];
@@ -107,18 +109,35 @@ export class Program {
     setTimeout(() => this.startLoop(), nextFrameInterval);
   }
 
+  deckState = [null, null, null, null];
   async mainLoop () {
-    this.deck0State = getSnapshot(stores.virtualDJDecks[0]);
-    this.deck1State = getSnapshot(stores.virtualDJDecks[1]);
+    this.deckState[0] = getSnapshot(stores.virtualDJDecks[0]);
+    this.deckState[1] = getSnapshot(stores.virtualDJDecks[1]);
     this.updateLogs();
     this.parseDataBuffer();
     this.songDetection();
     this.bpmDetection();
+    this.masterDetection();
     // this.phaseDetection();
   }
 
+  lastMasterDeck = -1;
+  masterDetection () {
+    const masterDeck = this.deckState[0].masterdeck === 'on' ? 0 : 1;
+    if (masterDeck !== this.lastMasterDeck) {
+      this.lastMasterDeck = masterDeck;
+      this.logger.log(`MasterDeck: ^y${masterDeck + 1}`);
+      this.writeNowPlaying();
+    }
+  }
+
+  writeNowPlaying () {
+    writeFile('logs/nowPlaying.txt', `${this.deckState[this.lastMasterDeck].get_title} - ${this.deckState[this.lastMasterDeck].get_artist}`);
+    writeJSON('logs/nowPlaying.json', this.deckState[this.lastMasterDeck]);
+  }
+
   bpmDetection () {
-    const masterState = this.deck0State.masterdeck === 'on' ? this.deck0State : this.deck1State;
+    const masterState = this.deckState[0].masterdeck === 'on' ? this.deckState[0] : this.deckState[1];
     const beatSync = (Math.floor(masterState.get_beatpos) % 16) === 0;
     if (beatSync !== this.lastBeatSync) {
       this.lastBeatSync = beatSync;
@@ -136,21 +155,32 @@ export class Program {
   }
 
   // -----------------------------------------------------------------
+  playingFile = ['', '', '', ''];
+  lastSong = [null, null, null, null];
   songDetection () {
-    const playingFile0 = this.deck0State.get_filepath + '|' + this.deck0State.get_title + '|' + this.deck0State.get_artist;
-    if (this.deck0PlayingFile !== playingFile0) {
-      this.deck0PlayingFile = playingFile0;
-      const song = this.songCatalog.getSong(this.deck0State.get_filepath, this.deck0State.get_artist, this.deck0State.get_title);
-      if (song !== this.lastSong0) {
-        this.lastSong0 = song;
+    this.deckSongDetection(0);
+    this.deckSongDetection(1);
+  }
+
+  deckSongDetection (deck) {
+    const playingFile = this.deckState[deck].get_filepath + '|' + this.deckState[deck].get_title + '|' + this.deckState[deck].get_artist;
+    if (this.playingFile[deck] !== playingFile) {
+      this.playingFile[deck] = playingFile;
+      const song = this.songCatalog.getSong(this.deckState[deck].get_filepath, this.deckState[deck].get_artist, this.deckState[deck].get_title);
+      if (song !== this.lastSong[deck]) {
+        this.lastSong[deck] = song;
         if (song != null) {
-          this.logger.log(`Deck 1: ^y${this.lastSong0.title} ^w- ^y${this.lastSong0.artist}`);
-        } else if (this.deck0State.get_title != null && this.deck0State.get_artist != null) {
-        // this.logger.log(`Deck1: ^rCould not find song in catalog - ^y${this.deck0State.get_title} ^w- ^y${this.deck0State.get_artist}`);
+          this.logger.log(`Deck ${deck + 1}: ^y${this.lastSong[deck].title} ^w- ^y${this.lastSong[deck].artist}`);
+        } else if (this.deckState[deck].get_title != null && this.deckState[deck].get_artist != null) {
+          // this.logger.log(`Deck1: ^rCould not find song in catalog - ^y${this.deckState[deck].get_title} ^w- ^y${this.deckState[deck].get_artist}`);
+        }
+        if (deck === this.lastMasterDeck) {
+          this.writeNowPlaying();
         }
       }
     }
   }
+
   // -----------------------------------------------------------------
 
   updateLogs () {

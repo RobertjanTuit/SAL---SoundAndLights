@@ -1,19 +1,18 @@
 import EventEmitter2 from 'eventemitter2';
 import WebSocket from 'isomorphic-ws';
-import { Logger } from '../core/Logger.js';
+import { ComplexLogger } from '../core/Logger.js';
 
 export class ResolumeWebClient extends EventEmitter2 {
-  logger = new Logger('ResolumeWeb');
   subscribedParams = [];
-  constructor ({ host, port }) {
+  constructor ({ host, port, logDetail }) {
     super({ wildcard: true, ignoreErrors: true });
     this.host = host;
     this.port = port;
+    this.logger = new ComplexLogger('ResolumeWeb', logDetail);
   }
 
   async start () {
     this.logger.log(`^bconnecting to ^gws://${this.host}:${this.port}`);
-
     this.tryConnect();
   }
 
@@ -52,7 +51,7 @@ export class ResolumeWebClient extends EventEmitter2 {
         // this.composition = data;
         this.bpmId = data.tempocontroller.tempo.id;
         this.resyncId = data.tempocontroller.resync.id;
-        this.logger.log(`bpm.id: ${this.bpmId}`);
+        this.logger.logDetail(`bpm.id: ${this.bpmId}`);
       } else {
         this.logger.log(`message: [:${ev.data.length}] ${ev.data.substring(0, 200)}`);
       }
@@ -150,6 +149,7 @@ export class ResolumeWebClient extends EventEmitter2 {
   }
 
   send (obj) {
+    this.logger.logDetail(`send: ${JSON.stringify(obj)}`);
     this.ws.send(JSON.stringify(obj));
   }
 }

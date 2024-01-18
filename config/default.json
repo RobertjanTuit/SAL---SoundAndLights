@@ -8,7 +8,8 @@
             "midiDebugNote": "",
             "midiMappings":{
                 "playPause": { "note": 1 }
-            }
+            },
+            "midiLog": false
         },
         "virtualDJ": {
             "process": "C:\\Program Files\\VirtualDJ\\virtualdj.exe",
@@ -24,6 +25,7 @@
 
             "midiDeviceName": "VirtualDJ",
             "midiDebugNote": "pingpong",
+            "midiLog": false,
             "midiMappings": {
                 "deck1Play": { "note": 1, "channel": 0 },
                 "deck1Stop": { "note": 2, "channel": 0 },
@@ -38,6 +40,7 @@
             "oscHost": "127.0.0.1",
             "webPort": 8080,
             "webHost": "127.0.0.1",
+            "midiLog": false,
             "layersAndClips":
             {
                 "primaryContentLayer": { "name": "Content", "columnStart": 86 },

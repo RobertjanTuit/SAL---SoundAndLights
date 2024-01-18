@@ -97,10 +97,11 @@ export default class ProgramTerminal extends EventEmitter2 {
 
   createDeck (document, deck, name) {
     this.vdjDecks[deck].text = this.createText(document, name, { x: 1, y: 0 });
-    this.vdjDecks[deck].level = this.createText(document, name, { x: 1, y: 1, width: 5 });
-    this.vdjDecks[deck].bpm = this.createText(document, name, { x: 6, y: 1, width: 5 });
-    this.vdjDecks[deck].beatPos = this.createText(document, name, { x: 13, y: 1, width: 5 });
-    this.vdjDecks[deck].elapsed = this.createText(document, name, { x: 21, y: 1, width: 8 });
+    this.vdjDecks[deck].master = this.createText(document, name, { x: 1, y: 1, width: 1 });
+    this.vdjDecks[deck].level = this.createText(document, name, { x: 3, y: 3, width: 5 });
+    this.vdjDecks[deck].bpm = this.createText(document, name, { x: 9, y: 1, width: 5 });
+    this.vdjDecks[deck].beatPos = this.createText(document, name, { x: 16, y: 1, width: 5 });
+    this.vdjDecks[deck].elapsed = this.createText(document, name, { x: 24, y: 1, width: 8 });
     this.vdjDecks[deck].phases = this.createText(document, name, { x: 1, y: 2, width: 20 });
   }
 
@@ -134,6 +135,7 @@ export default class ProgramTerminal extends EventEmitter2 {
 
   updateDeck (deckNr, deck) {
     this.vdjDecks[deckNr].text.setContent(`^g${deck.get_title} ^w- ^b${deck.get_artist}`, true);
+    this.vdjDecks[deckNr].master.setContent(`^Y${deck.masterdeck === 'on' ? 'M' : ''}`, true);
     this.vdjDecks[deckNr].level.setContent(`${this.toFixedString(deck.level, 2)}`, true);
     this.vdjDecks[deckNr].bpm.setContent(`${this.toFixedString(deck.get_bpm)}`, true);
     this.vdjDecks[deckNr].beatPos.setContent(`${this.toFixedString(deck.get_beatpos, 2)}`, true);
