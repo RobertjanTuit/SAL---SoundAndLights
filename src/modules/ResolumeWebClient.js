@@ -84,9 +84,14 @@ export class ResolumeWebClient extends EventEmitter2 {
     }
   }
 
+  resyncTimeout;
   resync () {
     if (this.resyncId) {
       this.action('trigger', this.resyncId, true);
+      clearTimeout(this.resyncTimeout);
+      this.resyncTimeout = setTimeout(() => {
+        this.action('trigger', this.resyncId, false);
+      }, 200);
     }
   }
 

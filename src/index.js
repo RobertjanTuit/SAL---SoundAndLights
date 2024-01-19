@@ -44,6 +44,10 @@ const processManager = new ProcessManager({ appsConfig, virtualDJMidiController,
 const program = new Program({ resolumeWebClient, processManager, appsConfig, virtualDJServer, soundswitchClient: soundSwitchClient, virtualDJSoundSwitchBridge, songCatalog, programTerminal, resolumeOSCCLient });
 program.start();
 
+programTerminal.on('debug', (data) => {
+  virtualDJServer.send('{"evt":"set","trigger":"deck 1 play","value":"off"} ');
+});
+
 quitOnSrcChange(settings, program, async () => {
   if (appsConfig.virtualDJ.killOnReloadQuit) {
     await processManager.killProcess('virtualDJ');

@@ -161,6 +161,9 @@ export default class ProgramTerminal extends EventEmitter2 {
         case 'f':
           this.emit('fixConnectedApps');
           break;
+        case 'd':
+          this.emit('debug');
+          break;
       }
     });
 

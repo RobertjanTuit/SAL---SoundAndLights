@@ -116,9 +116,8 @@ export class Program {
     this.updateLogs();
     this.parseDataBuffer();
     this.songDetection();
-    this.bpmDetection();
     this.masterDetection();
-    // this.phaseDetection();
+    this.bpmDetection();
   }
 
   lastMasterDeck = -1;
@@ -142,7 +141,6 @@ export class Program {
     if (beatSync !== this.lastBeatSync) {
       this.lastBeatSync = beatSync;
       if (beatSync) {
-        // this.logger.log(`Deck1 BeatSync: ${beatSync}`);
         this.resolumeWebClient.resync();
       }
       return;
