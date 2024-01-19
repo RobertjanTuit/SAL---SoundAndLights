@@ -1,7 +1,7 @@
 {
     "apps": {
         "resolume": {
-            "process": "C:\\Program Files\\Resolume Avenue\\Avenue.exe"
+            "process": "C:\\Program Files\\Resolume Arena\\Arena.exe"
         }
     }
 }
