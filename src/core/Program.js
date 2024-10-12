@@ -11,9 +11,9 @@ export class Program {
   logger = new Logger('Program');
   maxFrameRate = 30.0;
   maxFrameRateInterval = 1000.0 / this.maxFrameRate;
-  constructor ({ appsConfig, processManager, virtualDJServer, soundswitchClient, virtualDJSoundSwitchBridge, songCatalog, programTerminal, resolumeOSCCLient, resolumeWebClient }) {
+  constructor ({ appsConfig, processManager, virtualDJServer, soundswitchClient, virtualDJSoundSwitchBridge, songCatalog, programTerminal, resolumeOSCCLient, resolumeWebClient, pioneerProDJLinkClient, abletonLinkClient }) {
     this.virtualDJServer = virtualDJServer;
-    this.soundswitchClient = soundswitchClient;
+    // this.soundswitchClient = soundswitchClient;
     this.programTerminal = programTerminal;
     this.virtualDJSoundSwitchBridge = virtualDJSoundSwitchBridge;
     this.songCatalog = songCatalog;
@@ -21,6 +21,10 @@ export class Program {
     this.appsConfig = appsConfig;
     this.processManager = processManager;
     this.resolumeWebClient = resolumeWebClient;
+    this.pioneerProDJLinkClient = pioneerProDJLinkClient;
+    this.abletonLinkClient = abletonLinkClient;
+
+    this.abletonLinkClient.start();
 
     processManager.on('running', (app) => {
       this.logger.log(`^grunning: ^w${app}`);
@@ -33,6 +37,11 @@ export class Program {
     this.virtualDJServer.on('data', (data) => {
       this.addVirtualDJDataToBuffer(data);
     });
+    this.virtualDJServer.start();
+    this.pioneerProDJLinkClient.on('connected', () => {
+      applySnapshot(stores.status, { ...stores.status, pioneerProDJLink: true });
+    });
+    this.pioneerProDJLinkClient.start();
 
     this.programTerminal.on('fixConnectedApps', async () => {
       const apps = [];
@@ -51,6 +60,10 @@ export class Program {
     });
     this.resolumeWebClient.on('close', () => {
       applySnapshot(stores.status, { ...stores.status, resolumeWeb: false });
+    });
+
+    programTerminal.on('togglePrimary', () => {
+      applySnapshot(stores.status, { ...stores.status, virtualDJOrPioneer: !stores.status.virtualDJOrPioneer });
     });
   }
 
@@ -74,13 +87,17 @@ export class Program {
   async start () {
     this.programTerminal.start();
 
-    this.soundswitchClient.connect();
+    // this.soundswitchClient.connect();
 
     this.resolumeWebClient.start();
 
     this.startLoop();
 
     this.programTerminal.waitForUserInput();
+
+    this.programTerminal.on('resync', async () => {
+      this.resolumeWebClient.resync();
+    });
 
     this.processManager.start();
 
@@ -113,6 +130,8 @@ export class Program {
   async mainLoop () {
     this.deckState[0] = getSnapshot(stores.virtualDJDecks[0]);
     this.deckState[1] = getSnapshot(stores.virtualDJDecks[1]);
+    this.deckState[2] = getSnapshot(stores.pioneerDecks[0]);
+    this.deckState[3] = getSnapshot(stores.pioneerDecks[1]);
     this.updateLogs();
     this.parseDataBuffer();
     this.songDetection();
@@ -122,12 +141,20 @@ export class Program {
 
   lastMasterDeck = -1;
   masterDetection () {
-    const masterDeck = this.deckState[0].masterdeck === 'on' ? 0 : 1;
+    const masterDeck = this.getMasterDeck();
     if (masterDeck !== this.lastMasterDeck) {
+      applySnapshot(stores.status, { ...stores.status, masterDeck });
       this.lastMasterDeck = masterDeck;
-      this.logger.log(`MasterDeck: ^y${masterDeck + 1}`);
+      // this.logger.log(`MasterDeck: ^y${masterDeck + 1}`);
+      this.bpmDetection();
       this.writeNowPlaying();
     }
+  }
+
+  getMasterDeck () {
+    return stores.status.virtualDJOrPioneer
+      ? (this.deckState[0].masterdeck === 'on' ? 0 : 1)
+      : (this.deckState[2].masterdeck === 'on' ? 2 : 3);
   }
 
   writeNowPlaying () {
@@ -136,8 +163,20 @@ export class Program {
   }
 
   bpmDetection () {
-    const masterState = this.deckState[0].masterdeck === 'on' ? this.deckState[0] : this.deckState[1];
-    const beatSync = (Math.floor(masterState.get_beatpos) % 16) === 0;
+    const masterState = this.deckState[this.getMasterDeck()];
+    const phase = Math.floor(masterState.get_beatpos) % 4;
+    if (phase !== this.lastPhase) {
+      this.lastPhase = phase;
+      this.abletonLinkClient.setPhase(phase);
+    }
+
+    const beat = Math.floor(masterState.get_beatpos) % 32;
+    if (beat !== this.lastBeat) {
+      this.lastBeat = beat;
+      this.abletonLinkClient.setBeat(beat);
+    }
+
+    const beatSync = beat === 0;
     if (beatSync !== this.lastBeatSync) {
       this.lastBeatSync = beatSync;
       if (beatSync) {
@@ -147,8 +186,13 @@ export class Program {
     }
     if (masterState.get_bpm !== this.lastBpm) {
       this.lastBpm = masterState.get_bpm;
-      // this.logger.log(`BPM: ^y${this.lastBpm}`);
-      this.resolumeWebClient.bpm(this.lastBpm);
+      applySnapshot(stores.status, { ...stores.status, mainBPM: this.lastBpm });
+      // this.resolumeWebClient.bpm(this.lastBpm);
+      if (this.lastBpm > 0) {
+        this.abletonLinkClient.setBpm(this.lastBpm);
+        this.abletonLinkClient.setBeat(beat);
+        this.abletonLinkClient.setPhase(phase);
+      }
     }
   }
 
@@ -158,6 +202,8 @@ export class Program {
   songDetection () {
     this.deckSongDetection(0);
     this.deckSongDetection(1);
+    this.deckSongDetection(2);
+    this.deckSongDetection(3);
   }
 
   deckSongDetection (deck) {
@@ -193,8 +239,6 @@ export class Program {
       const decks = [];
       decks[0] = { ...getSnapshot(stores.virtualDJDecks[0]) };
       decks[1] = { ...getSnapshot(stores.virtualDJDecks[1]) };
-      decks[2] = { ...getSnapshot(stores.virtualDJDecks[2]) };
-      decks[3] = { ...getSnapshot(stores.virtualDJDecks[3]) };
       const virtualDJStatus = { ...stores.virtualDJStatus };
 
       let data;
@@ -205,6 +249,7 @@ export class Program {
         switch (DeckOrVerb) {
           case 'deck':
             const deckNr = trigger[1];
+            if (deckNr > 2) continue;
             const prop = trigger[2];
             switch (prop) {
               case ('play'):
@@ -257,8 +302,6 @@ export class Program {
 
       applySnapshot(stores.virtualDJDecks[0], decks[0]);
       applySnapshot(stores.virtualDJDecks[1], decks[1]);
-      applySnapshot(stores.virtualDJDecks[2], decks[2]);
-      applySnapshot(stores.virtualDJDecks[3], decks[3]);
       applySnapshot(stores.virtualDJStatus, virtualDJStatus);
     }
   }

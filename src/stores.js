@@ -44,6 +44,10 @@ const virtualDJStatusType = types.model('VirtualDJStatus', {
 });
 
 const statusType = types.model('Status', {
+  masterDeck: types.number = 0,
+  mainBPM: types.number = 0,
+  virtualDJOrPioneer: types.boolean = true,
+  pioneerProDJLink: types.boolean = false,
   soundSwitchOS2L: types.boolean = false,
   virtualDJOS2L: types.boolean = false,
   resolumeWeb: types.boolean = false,
@@ -54,6 +58,8 @@ export const status = statusType.create();
 export const virtualDJStatus = virtualDJStatusType.create();
 export const virtualDJDecks = [
   virtuaDJDeckType.create(),
-  virtuaDJDeckType.create(),
+  virtuaDJDeckType.create()];
+
+export const pioneerDecks = [
   virtuaDJDeckType.create(),
   virtuaDJDeckType.create()];

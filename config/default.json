@@ -49,6 +49,7 @@
         }
     },
     "settings": {
+        "log": false,
         "quitOnSrcChange": false
     }
 }

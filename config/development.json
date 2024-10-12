@@ -9,7 +9,7 @@
             "stopBeforeKill": true,
 
             "startOnLaunch": true,
-            "restoreOnProcessStart": true,
+            "restoreOnProcessStart": false,
 
             "midiLogDetail": true,
             "os2lLogDetail": true

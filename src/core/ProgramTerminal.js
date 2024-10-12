@@ -10,6 +10,8 @@ export const term = termkit.terminal;
 
 const version = process.env.npm_package_version;
 const defaultTextProps = { leftPadding: ' ', rightPadding: ' ', attr: { contentHasMarkup: true } };
+const virtualDJText = '^mVirtualDJ';
+const pioneerText = '^cPioneer';
 
 export default class ProgramTerminal extends EventEmitter2 {
   constructor () {
@@ -42,6 +44,9 @@ export default class ProgramTerminal extends EventEmitter2 {
             id: 'status-row',
             height: 3,
             columns: [
+              { id: names.masterDeck },
+              { id: names.mainBPM },
+              { id: names.virtualDJOrPioneer },
               { id: names.statusVirtualDJO2L },
               { id: names.statusSoundswitchO2L },
               { id: names.statusResolumeOSC }
@@ -53,6 +58,14 @@ export default class ProgramTerminal extends EventEmitter2 {
             columns: [
               { id: names.vdjDeck1 },
               { id: names.vdjDeck2 }
+            ]
+          },
+          {
+            id: 'pioneer-decks',
+            height: 5,
+            columns: [
+              { id: names.pioneerDeck1 },
+              { id: names.pioneerDeck2 }
             ]
           },
           {
@@ -68,16 +81,24 @@ export default class ProgramTerminal extends EventEmitter2 {
 
     new termkit.Text({ parent: document.elements.title, content: ` ${this.title}`, contentHasMarkup: true, attr: {} });
     this.fpsText = new termkit.Text({ parent: document.elements.fps, contentHasMarkup: true, leftPadding: ' ', attr: {} });
+
+    this.masterDeck = this.createText(document, names.masterDeck);
+    this.mainBPM = this.createText(document, names.mainBPM);
+    this.virtualDJOrPioneerText = this.createText(document, names.virtualDJOrPioneer);
     this.soundSwitchtatusText = this.createText(document, names.statusSoundswitchO2L);
     this.virtualDJStatusText = this.createText(document, names.statusVirtualDJO2L);
     this.resolumeOSCText = this.createText(document, names.statusResolumeOSC);
 
     this.vdjDecks = [{}, {}];
-    this.createDeck(document, 0, names.vdjDeck1);
-    this.createDeck(document, 1, names.vdjDeck2);
+    this.createDeck(this.vdjDecks, document, 0, names.vdjDeck1);
+    this.createDeck(this.vdjDecks, document, 1, names.vdjDeck2);
+
+    this.pioneerDecks = [{}, {}];
+    this.createDeck(this.pioneerDecks, document, 0, names.pioneerDeck1);
+    this.createDeck(this.pioneerDecks, document, 1, names.pioneerDeck2);
 
     this.logText = this.createTextBox(document, names.log, '');
-    this.commandsText = this.createText(document, names.commands, { content: '^gQ^wuit | ^gF^wix Connected Apps | Toggle ^gL^wog |', contentHasMarkup: true });
+    this.commandsText = this.createText(document, names.commands, { content: '^gQ^wuit ^-|^: ^gT^woggle Primary ^-|^:', contentHasMarkup: true });
 
     onSnapshot(stores.status, (snapshot) => {
       this.updateTerminalFromStatus(snapshot);
@@ -89,24 +110,51 @@ export default class ProgramTerminal extends EventEmitter2 {
       this.updateTerminalFromVDJDeck2(snapshot);
     });
 
+    onSnapshot(stores.pioneerDecks[0], (snapshot) => {
+      this.updateTerminalFromPioneerDeck1(snapshot);
+    });
+    onSnapshot(stores.pioneerDecks[1], (snapshot) => {
+      this.updateTerminalFromPioneerDeck2(snapshot);
+    });
+
     this.updateTerminalFromStatus(stores.status);
     this.updateTerminalFromVDJDeck1(stores.virtualDJDecks[0]);
     this.updateTerminalFromVDJDeck2(stores.virtualDJDecks[1]);
+
+    this.updateTerminalFromPioneerDeck1(stores.pioneerDecks[0]);
+    this.updateTerminalFromPioneerDeck2(stores.pioneerDecks[1]);
+
     this.updateFps(30);
   }
 
-  createDeck (document, deck, name) {
-    this.vdjDecks[deck].text = this.createText(document, name, { x: 1, y: 0 });
-    this.vdjDecks[deck].master = this.createText(document, name, { x: 1, y: 1, width: 1 });
-    this.vdjDecks[deck].level = this.createText(document, name, { x: 3, y: 3, width: 5 });
-    this.vdjDecks[deck].bpm = this.createText(document, name, { x: 9, y: 1, width: 5 });
-    this.vdjDecks[deck].beatPos = this.createText(document, name, { x: 16, y: 1, width: 5 });
-    this.vdjDecks[deck].elapsed = this.createText(document, name, { x: 24, y: 1, width: 8 });
-    this.vdjDecks[deck].phases = this.createText(document, name, { x: 1, y: 2, width: 20 });
+  createDeck (decks, document, deck, name) {
+    decks[deck].text = this.createText(document, name, { x: 1, y: 0 });
+    decks[deck].master = this.createText(document, name, { x: 1, y: 1, width: 3 });
+    decks[deck].level = this.createText(document, name, { x: 3, y: 1, width: 5 });
+    decks[deck].bpm = this.createText(document, name, { x: 9, y: 1, width: 7 });
+    decks[deck].beatPos = this.createText(document, name, { x: 16, y: 1, width: 7 });
+    decks[deck].elapsed = this.createText(document, name, { x: 24, y: 1, width: 18 });
+    decks[deck].phases = this.createText(document, name, { x: 1, y: 2, width: 40 });
+  }
+
+  getDeckLabel (nr) {
+    switch (nr) {
+      case 0:
+        return `^W0^-:^:${virtualDJText}-1`;
+      case 1:
+        return `^W1^-:^:${virtualDJText}-^M2`;
+      case 2:
+        return `^W2^-:^:${pioneerText}-1`;
+      case 3:
+        return `^W3^-:^:${pioneerText}-^C2`;
+    }
   }
 
   updateTerminalFromStatus (globalStatus) {
-    this.soundSwitchtatusText.setContent(`Soundswitch OS2L: ${this.trueFalseColor(globalStatus.soundSwitchOS2L)}`, true);
+    this.masterDeck.setContent(`Master Deck: ${this.getDeckLabel(globalStatus.masterDeck)}`, true);
+    this.mainBPM.setContent(`BPM: ${globalStatus.mainBPM}`, true);
+    this.virtualDJOrPioneerText.setContent(`Primary: ${(globalStatus.virtualDJOrPioneer ? virtualDJText : pioneerText)}`, true);
+    this.soundSwitchtatusText.setContent(`Pioneer Pro DJ Link: ${this.trueFalseColor(globalStatus.pioneerProDJLink)}`, true);
     this.virtualDJStatusText.setContent(`VirtualDJ OS2L: ${this.trueFalseColor(globalStatus.virtualDJOS2L)}`, true);
     this.resolumeOSCText.setContent(`Resolume Web: ${this.trueFalseColor(globalStatus.resolumeWeb)}`, true);
   }
@@ -119,11 +167,19 @@ export default class ProgramTerminal extends EventEmitter2 {
   }
 
   updateTerminalFromVDJDeck1 (deck) {
-    this.updateDeck(0, deck);
+    this.updateDeck(this.vdjDecks, 0, deck, this.getDeckLabel(0));
   }
 
   updateTerminalFromVDJDeck2 (deck) {
-    this.updateDeck(1, deck);
+    this.updateDeck(this.vdjDecks, 1, deck, this.getDeckLabel(1));
+  }
+
+  updateTerminalFromPioneerDeck1 (deck) {
+    this.updateDeck(this.pioneerDecks, 0, deck, this.getDeckLabel(2));
+  }
+
+  updateTerminalFromPioneerDeck2 (deck) {
+    this.updateDeck(this.pioneerDecks, 1, deck, this.getDeckLabel(3));
   }
 
   updateFps (fps) {
@@ -133,15 +189,19 @@ export default class ProgramTerminal extends EventEmitter2 {
     }
   }
 
-  updateDeck (deckNr, deck) {
-    this.vdjDecks[deckNr].text.setContent(`^g${deck.get_title} ^w- ^b${deck.get_artist}`, true);
-    this.vdjDecks[deckNr].master.setContent(`^Y${deck.masterdeck === 'on' ? 'M' : ''}`, true);
-    this.vdjDecks[deckNr].level.setContent(`${this.toFixedString(deck.level, 2)}`, true);
-    this.vdjDecks[deckNr].bpm.setContent(`${this.toFixedString(deck.get_bpm)}`, true);
-    this.vdjDecks[deckNr].beatPos.setContent(`${this.toFixedString(deck.get_beatpos, 2)}`, true);
+  updateDeck (decks, deckNr, deck, deckLabel) {
+    let title = `^g${deck.get_title}`;
+    if (deck.get_artist) {
+      title += ` ^w- ^b${deck.get_artist}`;
+    }
+    decks[deckNr].text.setContent(`^w^-[^:${deckLabel}^w^-]^: ${title}`, true);
+    decks[deckNr].master.setContent(`^Y${deck.masterdeck === 'on' ? 'M' : ''}`, true);
+    decks[deckNr].level.setContent(`${this.toFixedString(deck.level, 2)}`, true);
+    decks[deckNr].bpm.setContent(`${this.toFixedString(deck.get_bpm)}`, true);
+    decks[deckNr].beatPos.setContent(`${this.toFixedString(deck.get_beatpos, 2)}`, true);
     // TODO: Use better method to turn timestamp into string, can go into negative as well
-    this.vdjDecks[deckNr].elapsed.setContent(`${moment(Math.max(deck.get_time - (16 * 3600 * 1000))).format('HH:mm:ss.SSS')}`, true);
-    this.vdjDecks[deckNr].phases.setContent(`${deck.get_filepath}`, true);
+    decks[deckNr].elapsed.setContent(`${moment(Math.max(deck.get_time - (16 * 3600 * 1000))).format('HH:mm:ss.SSS')}`, true);
+    decks[deckNr].phases.setContent(`${deck.get_filepath}`, true);
   }
 
   createText (document, id, options) {
@@ -158,8 +218,11 @@ export default class ProgramTerminal extends EventEmitter2 {
         case 'q':
           this.quit();
           break;
-        case 'f':
-          this.emit('fixConnectedApps');
+        case 't':
+          this.emit('togglePrimary');
+          break;
+        case 'r':
+          this.emit('resync');
           break;
         case 'd':
           this.emit('debug');
