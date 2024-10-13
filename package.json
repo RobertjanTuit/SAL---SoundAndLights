@@ -14,6 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@elgato-stream-deck/node": "^7.0.2",
     "abletonlink": "^0.2.0-beta.0",
     "bonjour": "^3.5.0",
     "chokidar": "^3.6.0",

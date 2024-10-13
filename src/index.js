@@ -19,6 +19,7 @@ import { VirtualDJMidi as VirtualDJMidiController } from './modules/VirtualDJMid
 import termkit from 'terminal-kit';
 import { existsSync, mkdirSync } from 'node:fs';
 import { Logger } from './core/Logger.js';
+import { StreamDeckClient } from './modules/StreamDeckClient.js';
 
 export const term = termkit.terminal;
 
@@ -33,7 +34,6 @@ if (settings.log) {
   Logger.disable();
 }
 
-// const soundSwitchMidiController = new SoundSwitchMidiController({ midiDeviceName: appsConfig.soundSwitch.midiDeviceName, midiMappings: appsConfig.soundSwitch.midiMappings, midiDebugNote: appsConfig.soundSwitch.midiDebugNote, logDetail: appsConfig.soundSwitch.midiLogDetail });
 const soundSwitchClient = new SoundSwitchClient(status, { port: appsConfig.soundSwitch.port, host: appsConfig.soundSwitch.host, logDetail: appsConfig.soundSwitch.os2lLogDetail });
 
 const virtualDJServer = new VirtualDJServer(status, { port: appsConfig.virtualDJ.port, host: appsConfig.virtualDJ.host, logDetail: appsConfig.virtualDJ.os2lLogDetail });
@@ -45,6 +45,8 @@ const virtualDJSoundSwitchBridge = new VirtualDJSoundSwitchBridge(status, soundS
 const resolumeOSCCLient = new ResolumeOSCCLient({ port: appsConfig.resolume.oscPort, host: appsConfig.resolume.oscHost, logDetail: appsConfig.resolume.oscLogDetail });
 const resolumeWebClient = new ResolumeWebClient({ port: appsConfig.resolume.webPort, host: appsConfig.resolume.webHost, logDetail: appsConfig.resolume.webLogDetail });
 
+const streamDeckClient = new StreamDeckClient();
+
 const pioneerProDJLinkClient = new PioneerProDJLinkClient();
 const abletonLinkClient = new AbletonLinkClient();
 
@@ -52,7 +54,7 @@ const programTerminal = new ProgramTerminal();
 const songCatalog = new SongCatalog({ reloadOnChange: appsConfig.virtualDJ.databaseReloadOnChange });
 const processManager = new ProcessManager({ appsConfig, virtualDJMidiController, virtualDJServer });
 
-const program = new Program({ resolumeWebClient, processManager, appsConfig, virtualDJServer, soundswitchClient: soundSwitchClient, virtualDJSoundSwitchBridge, songCatalog, programTerminal, resolumeOSCCLient, pioneerProDJLinkClient, abletonLinkClient });
+const program = new Program({ resolumeWebClient, processManager, appsConfig, virtualDJServer, virtualDJSoundSwitchBridge, songCatalog, programTerminal, resolumeOSCCLient, pioneerProDJLinkClient, abletonLinkClient, streamDeckClient });
 program.start();
 
 programTerminal.on('debug', (data) => {

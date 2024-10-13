@@ -11,7 +11,7 @@ export class Program {
   logger = new Logger('Program');
   maxFrameRate = 30.0;
   maxFrameRateInterval = 1000.0 / this.maxFrameRate;
-  constructor ({ appsConfig, processManager, virtualDJServer, soundswitchClient, virtualDJSoundSwitchBridge, songCatalog, programTerminal, resolumeOSCCLient, resolumeWebClient, pioneerProDJLinkClient, abletonLinkClient }) {
+  constructor ({ appsConfig, processManager, virtualDJServer, virtualDJSoundSwitchBridge, songCatalog, programTerminal, resolumeOSCCLient, resolumeWebClient, pioneerProDJLinkClient, abletonLinkClient, streamDeckClient }) {
     this.virtualDJServer = virtualDJServer;
     // this.soundswitchClient = soundswitchClient;
     this.programTerminal = programTerminal;
@@ -23,8 +23,10 @@ export class Program {
     this.resolumeWebClient = resolumeWebClient;
     this.pioneerProDJLinkClient = pioneerProDJLinkClient;
     this.abletonLinkClient = abletonLinkClient;
+    this.streamDeckClient = streamDeckClient;
 
     this.abletonLinkClient.start();
+    this.streamDeckClient.start();
 
     processManager.on('running', (app) => {
       this.logger.log(`^grunning: ^w${app}`);
