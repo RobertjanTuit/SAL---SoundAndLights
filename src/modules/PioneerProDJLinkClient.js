@@ -12,6 +12,7 @@ export class PioneerProDJLinkClient extends EventEmitter2 {
   logger = new Logger('PioneerProDJLinkClient');
   network;
   async start () {
+    this.logger.log('Starting Pioneer Pro DJ Link Client');
     // Open connections to the network
     try {
       this.network = await bringOnline();

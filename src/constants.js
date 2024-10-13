@@ -2,7 +2,7 @@ export const names = {
   masterDeck: 'naster-deck',
   mainBPM: 'main-bpm',
   virtualDJOrPioneer: 'virtualDJ-or-pioneer',
-  statusSoundswitchO2L: 'status-soundswitch-o2l',
+  pioneerDJLinkPro: 'status-soundswitch-o2l',
   statusVirtualDJO2L: 'status-virtualDJ-o2l',
   statusResolumeOSC: 'status-web-osc',
   vdjDeck1: 'vdj-deck1',

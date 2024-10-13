@@ -48,7 +48,7 @@ export default class ProgramTerminal extends EventEmitter2 {
               { id: names.mainBPM },
               { id: names.virtualDJOrPioneer },
               { id: names.statusVirtualDJO2L },
-              { id: names.statusSoundswitchO2L },
+              { id: names.pioneerDJLinkPro },
               { id: names.statusResolumeOSC }
             ]
           },
@@ -85,7 +85,7 @@ export default class ProgramTerminal extends EventEmitter2 {
     this.masterDeck = this.createText(document, names.masterDeck);
     this.mainBPM = this.createText(document, names.mainBPM);
     this.virtualDJOrPioneerText = this.createText(document, names.virtualDJOrPioneer);
-    this.soundSwitchtatusText = this.createText(document, names.statusSoundswitchO2L);
+    this.pioneerDJLinkProText = this.createText(document, names.pioneerDJLinkPro);
     this.virtualDJStatusText = this.createText(document, names.statusVirtualDJO2L);
     this.resolumeOSCText = this.createText(document, names.statusResolumeOSC);
 
@@ -154,7 +154,7 @@ export default class ProgramTerminal extends EventEmitter2 {
     this.masterDeck.setContent(`Master Deck: ${this.getDeckLabel(globalStatus.masterDeck)}`, true);
     this.mainBPM.setContent(`BPM: ${globalStatus.mainBPM}`, true);
     this.virtualDJOrPioneerText.setContent(`Primary: ${(globalStatus.virtualDJOrPioneer ? virtualDJText : pioneerText)}`, true);
-    this.soundSwitchtatusText.setContent(`Pioneer Pro DJ Link: ${this.trueFalseColor(globalStatus.pioneerProDJLink)}`, true);
+    this.pioneerDJLinkProText.setContent(`Pioneer Pro DJ Link: ${this.trueFalseColor(globalStatus.pioneerProDJLink)}`, true);
     this.virtualDJStatusText.setContent(`VirtualDJ OS2L: ${this.trueFalseColor(globalStatus.virtualDJOS2L)}`, true);
     this.resolumeOSCText.setContent(`Resolume Web: ${this.trueFalseColor(globalStatus.resolumeWeb)}`, true);
   }
