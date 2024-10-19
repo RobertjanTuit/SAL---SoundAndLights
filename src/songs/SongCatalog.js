@@ -8,15 +8,16 @@ import { existsSync, statSync, watch } from 'fs';
 import { Logger } from '../core/Logger.js';
 import drivelist from 'drivelist';
 import networkDrive from 'windows-network-drive';
-import { readFile } from 'fs/promises';
+import { readFile, mkdir } from 'fs/promises';
 import { writeJSON } from '../utils.js';
 
 export class SongCatalog extends EventEmitter2 {
   songs = {};
   databases = {};
   logger = new Logger('SongCatalog');
-  constructor ({ reloadOnChange }) {
+  constructor ({ reloadOnChange, logToDisk }) {
     super({ wildcard: true, ignoreErrors: true });
+    this.logToDisk = logToDisk;
     this.reloadOnChange = reloadOnChange;
   }
 
@@ -57,8 +58,17 @@ export class SongCatalog extends EventEmitter2 {
     }
   }
 
-  writeSongDatabaseLog () {
-    writeJSON('logs/songDatabase.json', this.songs);
+  async writeSongDatabaseLog () {
+    if (!this.logToDisk) return;
+
+    try {
+      if (!existsSync('songData')) {
+        await mkdir('songData');
+      }
+      await writeJSON('songData/songDatabase.json', this.songs);
+    } catch (error) {
+      this.logger.log(`Error writing song database log: ${error}`);
+    }
   }
 
   async processVirtualDJPath (path) {

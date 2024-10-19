@@ -11,6 +11,10 @@
             },
             "midiLog": false
         },
+        "virtualDJRelay": {
+            "port": 4445,
+            "host": "127.0.0.1"
+        },
         "virtualDJ": {
             "process": "C:\\Program Files\\VirtualDJ\\virtualdj.exe",
             "port": 4444,
@@ -49,7 +53,7 @@
         }
     },
     "settings": {
-        "log": false,
+        "logToDisk": false,
         "quitOnSrcChange": false
     }
 }

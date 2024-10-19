@@ -18,13 +18,11 @@ export class NullLogger {
 
 export class ComplexLogger {
   constructor (group, detailEnabled = false) {
-    if (this.disabled) return;
     this.logger = new Logger(group, 'main');
     this.detailLogger = detailEnabled ? new Logger(group, group) : new NullLogger(group, group);
   }
 
   log (msg, isDetail) {
-    if (this.disabled) return;
     if (!isDetail) {
       this.logger.log(msg);
     }
@@ -32,7 +30,6 @@ export class ComplexLogger {
   }
 
   logDetail (msg) {
-    if (this.disabled) return;
     this.log(msg, true);
   }
 }
@@ -43,23 +40,21 @@ export class Logger {
     return loggers[name] ?? (loggers[name] = new Logger(name));
   }
 
-  static disabled = false;
-  static disable () {
-    this.disabled = true;
+  static direct = false;
+  static disabledFileLogger = false;
+  static disableFileLogger () {
+    Logger.disabledFileLogger = true;
   }
 
   static log (msg) {
-    if (this.disabled) return;
     getLogger('global').log(msg);
   }
 
   static error (msg) {
-    if (this.disabled) return;
     getLogger('global').error(msg);
   }
 
   constructor (group, name = 'main') {
-    if (this.disabled) return;
     this.name = name;
     this.groupLabel = group !== '' ? `[^b${group}^w]` : '';
     this.prepareFiles(name, this.groupLabel);
@@ -68,6 +63,8 @@ export class Logger {
   }
 
   prepareFiles (name, groupLabel) {
+    if (Logger.disabledFileLogger) return;
+
     const logFile = `logs/log-${name}.log`;
     const ansiLogFile = `logs/log-${name}.ansi`;
     archiveLogFiles(logFile, ansiLogFile);
@@ -82,23 +79,28 @@ export class Logger {
   }
 
   error (msg) {
-    this.log(`^r${msg}`);
+    this.log(`^r[ERROR] ${msg}`);
   }
 
   log (msg) {
-    if (this.disabled) return;
+    if (Logger.direct) {
+      console.log(stringKit.format(`^y${moment().format('HH:mm:ss.SSS')}^w - ${this.groupLabel !== '' ? this.groupLabel + ' ' : ''}${msg}`));
+      return;
+    }
     if (this.name === 'main') {
       Logger.logLines.push(`^y${moment().format('HH:mm:ss.SSS')}^w - ${this.groupLabel !== '' ? this.groupLabel + ' ' : ''}${msg}`);
     }
     if (typeof msg === 'object') {
       msg = JSON.stringify(msg);
     }
+    if (Logger.disabledFileLogger) return;
     this.ansiFileLogger.info(stringKit.format(msg));
     this.fileLogger.info(stripAnsi((stringKit.format(msg))));
   }
 }
 
 function archiveLogFiles (logFile, ansiLogFile) {
+  if (Logger.disabledFileLogger) return;
   if (existsSync(logFile)) {
     unlinkSync(logFile);
   }

@@ -46,11 +46,20 @@ const virtualDJStatusType = types.model('VirtualDJStatus', {
 const statusType = types.model('Status', {
   masterDeck: types.number = 0,
   mainBPM: types.number = 0,
+  mainBeatPos: types.number = 0,
+  mainBeat: types.number = 0,
+  mainPhase: types.number = 0,
+  mainBeatPosAhead: types.number = 0,
+  mainBeatAhead: types.number = 0,
+  mainPhaseAhead: types.number = 0,
   virtualDJOrPioneer: types.boolean = true,
   pioneerProDJLink: types.boolean = false,
   soundSwitchOS2L: types.boolean = false,
   virtualDJOS2L: types.boolean = false,
+  streamDeck: types.boolean = false,
   resolumeWeb: types.boolean = false,
+  abletonForSync: types.boolean = false,
+  abletonLinks: types.number = 0,
   logLines: types.array(types.string)
 });
 

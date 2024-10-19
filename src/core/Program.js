@@ -3,43 +3,41 @@
 import * as stores from '../stores.js';
 import { applySnapshot, getSnapshot } from 'mobx-state-tree';
 import { Logger } from './Logger.js';
-import { writeFile } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
 import { writeJSON } from '../utils.js';
+import { existsSync } from 'fs';
 
 export class Program {
   dataBuffer = [];
   logger = new Logger('Program');
   maxFrameRate = 30.0;
   maxFrameRateInterval = 1000.0 / this.maxFrameRate;
-  constructor ({ appsConfig, processManager, virtualDJServer, virtualDJSoundSwitchBridge, songCatalog, programTerminal, resolumeOSCCLient, resolumeWebClient, pioneerProDJLinkClient, abletonLinkClient, streamDeckClient }) {
-    this.virtualDJServer = virtualDJServer;
-    // this.soundswitchClient = soundswitchClient;
+  constructor ({ appsConfig, virtualDJRelayClient, songCatalog, programTerminal, resolumeOSCCLient, resolumeWebClient, pioneerProDJLinkClient, abletonLinkClient, streamDeckClient }) {
+    this.virtualDJRelayClient = virtualDJRelayClient;
     this.programTerminal = programTerminal;
-    this.virtualDJSoundSwitchBridge = virtualDJSoundSwitchBridge;
     this.songCatalog = songCatalog;
     this.resolumeOSCCLient = resolumeOSCCLient;
     this.appsConfig = appsConfig;
-    this.processManager = processManager;
     this.resolumeWebClient = resolumeWebClient;
     this.pioneerProDJLinkClient = pioneerProDJLinkClient;
     this.abletonLinkClient = abletonLinkClient;
     this.streamDeckClient = streamDeckClient;
 
-    this.abletonLinkClient.start();
-    this.streamDeckClient.start();
-
-    processManager.on('running', (app) => {
-      this.logger.log(`^grunning: ^w${app}`);
-    });
-
-    processManager.on('notrunning', (app) => {
-      this.logger.log(`^rnotrunning: ^w${app}`);
-    });
-
-    this.virtualDJServer.on('data', (data) => {
+    this.virtualDJRelayClient.on('data', (data) => {
       this.addVirtualDJDataToBuffer(data);
     });
-    this.virtualDJServer.start();
+
+    this.abletonLinkClient.on('numPeers', (peers) => {
+      applySnapshot(stores.status, { ...stores.status, abletonLinks: peers });
+    });
+    this.abletonLinkClient.start();
+    this.streamDeckClient.start();
+    this.streamDeckClient.on('connected', () => {
+      applySnapshot(stores.status, { ...stores.status, streamDeck: true });
+    });
+    this.streamDeckClient.on('toggleSync', this.toggleSync);
+    this.streamDeckClient.on('togglePrimary', this.togglePrimary);
+
     this.pioneerProDJLinkClient.on('connected', () => {
       applySnapshot(stores.status, { ...stores.status, pioneerProDJLink: true });
     });
@@ -64,44 +62,58 @@ export class Program {
       applySnapshot(stores.status, { ...stores.status, resolumeWeb: false });
     });
 
-    programTerminal.on('togglePrimary', () => {
-      applySnapshot(stores.status, { ...stores.status, virtualDJOrPioneer: !stores.status.virtualDJOrPioneer });
-    });
+    programTerminal.on('togglePrimary', this.togglePrimary);
+    programTerminal.on('toggleSync', this.toggleSync);
   }
 
-  addVirtualDJDataToBuffer (data) {
-    switch (data.evt) {
-      case 'subscribed':
-        this.dataBuffer.push(data);
-        break;
-      case 'btn':
+  togglePrimary () {
+    applySnapshot(stores.status, { ...stores.status, virtualDJOrPioneer: !stores.status.virtualDJOrPioneer });
+  }
+
+  toggleSync () {
+    const abletonForSync = !stores.status.abletonForSync;
+    applySnapshot(stores.status, { ...stores.status, abletonForSync });
+    if (abletonForSync) {
+      this.abletonLinkClient.enable();
+    } else {
+      this.abletonLinkClient.disable();
+    }
+  }
+
+  addVirtualDJDataToBuffer (array) {
+    for (const data of array) {
+      switch (data.evt) {
+        case 'subscribed':
+          this.dataBuffer.push(data);
+          break;
+        case 'btn':
         // Ignore btn events
-        break;
-      case 'beat':
+          break;
+        case 'beat':
         // TODO: Act on global beat
-        break;
-      default:
-        this.logger.log(JSON.stringify(data));
-        break;
+          break;
+        default:
+          this.logger.log(JSON.stringify(data));
+          break;
+      }
     }
   }
 
   async start () {
     this.programTerminal.start();
 
-    // this.soundswitchClient.connect();
-
     this.resolumeWebClient.start();
+
+    this.virtualDJRelayClient.start();
 
     this.startLoop();
 
     this.programTerminal.waitForUserInput();
 
     this.programTerminal.on('resync', async () => {
+      this.logger.log('Resyncing Resolume');
       this.resolumeWebClient.resync();
     });
-
-    this.processManager.start();
 
     await this.songCatalog.init();
   }
@@ -130,12 +142,14 @@ export class Program {
 
   deckState = [null, null, null, null];
   async mainLoop () {
+    this.updateLogs();
+    this.parseDataBuffer();
+
     this.deckState[0] = getSnapshot(stores.virtualDJDecks[0]);
     this.deckState[1] = getSnapshot(stores.virtualDJDecks[1]);
     this.deckState[2] = getSnapshot(stores.pioneerDecks[0]);
     this.deckState[3] = getSnapshot(stores.pioneerDecks[1]);
-    this.updateLogs();
-    this.parseDataBuffer();
+
     this.songDetection();
     this.masterDetection();
     this.bpmDetection();
@@ -159,41 +173,72 @@ export class Program {
       : (this.deckState[2].masterdeck === 'on' ? 2 : 3);
   }
 
-  writeNowPlaying () {
-    writeFile('logs/nowPlaying.txt', `${this.deckState[this.lastMasterDeck].get_title} - ${this.deckState[this.lastMasterDeck].get_artist}`);
-    writeJSON('logs/nowPlaying.json', this.deckState[this.lastMasterDeck]);
+  async writeNowPlaying () {
+    try {
+      if (!existsSync('nowplaying')) {
+        await mkdir('nowplaying');
+      }
+      await writeFile('nowPlaying/nowPlaying.txt', `${this.deckState[this.lastMasterDeck].get_title} - ${this.deckState[this.lastMasterDeck].get_artist}`);
+      await writeJSON('nowPlaying/nowPlaying.json', this.deckState[this.lastMasterDeck]);
+    } catch (e) {
+      this.logger.log(`Error writing now playing: ${e}`);
+    }
   }
 
   bpmDetection () {
+    const abletonForSync = stores.status.abletonForSync;
     const masterState = this.deckState[this.getMasterDeck()];
-    const phase = Math.floor(masterState.get_beatpos) % 4;
-    if (phase !== this.lastPhase) {
-      this.lastPhase = phase;
-      this.abletonLinkClient.setPhase(phase);
-    }
 
-    const beat = Math.floor(masterState.get_beatpos) % 32;
-    if (beat !== this.lastBeat) {
-      this.lastBeat = beat;
-      this.abletonLinkClient.setBeat(beat);
-    }
+    const beatPosAhead = Math.floor(masterState.get_beatpos - 0.01);
+    const phaseAhead = beatPosAhead >= 0 ? (beatPosAhead % 4) : 3 - Math.abs(beatPosAhead) % 4;
+    const beatAhead = beatPosAhead >= 0 ? (beatPosAhead % 16) : 15 - Math.abs(beatPosAhead) % 16;
+    applySnapshot(stores.status, { ...stores.status, mainBeatPosAhead: beatPosAhead });
+    applySnapshot(stores.status, { ...stores.status, mainPhaseAhead: phaseAhead });
+    applySnapshot(stores.status, { ...stores.status, mainBeatAhead: beatAhead });
 
+    const beatPos = Math.floor(masterState.get_beatpos);
+    const phase = masterState.get_beatpos2 || (beatPos >= 0 ? (beatPos % 4) : 3 - Math.abs(beatPos) % 4);
+    const beat = beatPos >= 0 ? (beatPos % 16) : 15 - Math.abs(beatPos) % 16;
     const beatSync = beat === 0;
-    if (beatSync !== this.lastBeatSync) {
-      this.lastBeatSync = beatSync;
-      if (beatSync) {
-        this.resolumeWebClient.resync();
-      }
-      return;
+
+    if (this.lastBeatPos !== beatPos) {
+      this.lastBeatPos = beatPos;
+      applySnapshot(stores.status, { ...stores.status, mainBeatPos: this.lastBeatPos });
     }
+
     if (masterState.get_bpm !== this.lastBpm) {
       this.lastBpm = masterState.get_bpm;
       applySnapshot(stores.status, { ...stores.status, mainBPM: this.lastBpm });
-      // this.resolumeWebClient.bpm(this.lastBpm);
+
       if (this.lastBpm > 0) {
-        this.abletonLinkClient.setBpm(this.lastBpm);
-        this.abletonLinkClient.setBeat(beat);
+        if (abletonForSync) {
+          this.abletonLinkClient.setBpm(this.lastBpm);
+        } else {
+          this.resolumeWebClient.bpm(this.lastBpm);
+        }
+      }
+    }
+
+    if (phase !== this.lastPhase) {
+      applySnapshot(stores.status, { ...stores.status, mainPhase: phase });
+      this.lastPhase = phase;
+      if (abletonForSync) {
         this.abletonLinkClient.setPhase(phase);
+      }
+    }
+
+    if (beat !== this.lastBeat) {
+      applySnapshot(stores.status, { ...stores.status, mainBeat: beat });
+      this.lastBeat = beat;
+      if (abletonForSync) {
+        this.abletonLinkClient.setBeat(beat);
+      }
+    }
+
+    if (beatSync !== this.lastBeatSync) {
+      this.lastBeatSync = beatSync;
+      if (beatSync && !abletonForSync) {
+        this.resolumeWebClient.resync();
       }
     }
   }
@@ -282,7 +327,7 @@ export class Program {
               case (''): // ignore the rest
                 break;
               default: // output the unknown
-                this.logger.log(JSON.stringify(data));
+                this.logger.log('Unknown prop' + JSON.stringify(data));
                 break;
             }
             break;
@@ -294,6 +339,8 @@ export class Program {
           case 'masterdeck_auto':
           case 'get_vdj_folder':
             // console.log({ DeckOrVerb, data });
+            decks[0][DeckOrVerb] = data.value;
+            decks[1][DeckOrVerb] = data.value;
             virtualDJStatus[DeckOrVerb] = data.value;
             break;
           default:

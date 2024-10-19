@@ -7,6 +7,7 @@ import path from 'path';
 import { virtualDJDecks } from '../stores.js';
 import { getSnapshot } from 'mobx-state-tree';
 import { writeJSON } from '../utils.js';
+import { existsSync, mkdirSync } from 'fs';
 const exec = util.promisify(child.exec);
 
 export const AppNames = {
@@ -40,8 +41,9 @@ export class ProcessManager extends EventEmitter2 {
     const deckData2 = getSnapshot(virtualDJDecks[1]);
     switch (appName) {
       case AppNames.virtualDJ:
-        await writeJSON('logs/lastSessionDeckData1.json', deckData1);
-        await writeJSON('logs/lastSessionDeckData2.json', deckData2);
+        if (!existsSync('vdj')) mkdirSync('vdj');
+        await writeJSON('vdj/lastsessionDeckData1.json', deckData1);
+        await writeJSON('vdj/lastsessionDeckData2.json', deckData2);
         this.virtualDJMidiController.deck1Stop();
         this.virtualDJMidiController.deck2Stop();
         await new Promise(resolve => setTimeout(resolve, 2000));

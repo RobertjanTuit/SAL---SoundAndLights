@@ -6,7 +6,8 @@
   "scripts": {
     "start": "set NODE_ENV=default&&node src/index.js",
     "basement": "set NODE_ENV=basement&&node src/index.js",
-    "dev": "set NODE_ENV=development&&node src/index.js"
+    "dev": "set NODE_ENV=development&&node src/index.js",
+    "vdj": "set NODE_ENV=default&&node src/vdj.js"
   },
   "engines": {
     "node": ">=16.0.0"
@@ -17,6 +18,7 @@
     "@elgato-stream-deck/node": "^7.0.2",
     "abletonlink": "^0.2.0-beta.0",
     "bonjour": "^3.5.0",
+    "canvas": "^3.0.0-rc2",
     "chokidar": "^3.6.0",
     "config": "^3.3.12",
     "drivelist": "^12.0.2",
@@ -31,6 +33,7 @@
     "node-window-manager": "^2.2.4",
     "os2l": "^1.0.4",
     "pm2": "^5.4.2",
+    "pngjs": "^7.0.0",
     "prolink-connect": "^0.11.0",
     "save": "^2.9.0",
     "simple-node-logger": "^21.8.12",

@@ -84,7 +84,9 @@ export class PioneerProDJLinkClient extends EventEmitter2 {
 
     deck.masterdeck = state.isMaster ? 'on' : 'off';
     deck.get_bpm = state.trackBPM !== null && state.trackBPM !== undefined ? (state.trackBPM + (state.trackBPM * (state.sliderPitch ?? 0)) / 100) : 0;
-    deck.get_beatpos = state.beatInMeasure || 0;
+    deck.get_beatpos = state.beat || 0;
+    deck.get_beat = state.beatInMeasure || 0;
+    deck.get_beat2 = state.beatInMeasure || 0;
     deck.get_time = state.beat == null || state.trackBPM == null ? 0 : ((state.beat / state.trackBPM) * 60) * 1000;
   }
 }

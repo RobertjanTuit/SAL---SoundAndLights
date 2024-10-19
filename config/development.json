@@ -5,10 +5,10 @@
             "os2lLogDetail": true
         },
         "virtualDJ": {
-            "killOnReloadQuit": true,
-            "stopBeforeKill": true,
+            "killOnReloadQuit": false,
+            "stopBeforeKill": false,
 
-            "startOnLaunch": true,
+            "startOnLaunch": false,
             "restoreOnProcessStart": false,
 
             "midiLogDetail": true,

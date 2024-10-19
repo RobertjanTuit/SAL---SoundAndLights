@@ -1,5 +1,4 @@
-import { applySnapshot } from 'mobx-state-tree';
-import { ComplexLogger, Logger } from '../core/Logger.js';
+import { ComplexLogger } from '../core/Logger.js';
 import { eventNames } from '../OS2L/OS2L-constants.js';
 import { OS2LServer } from '../OS2L/OS2L-server.js';
 import EventEmitter2 from 'eventemitter2';
@@ -23,7 +22,6 @@ export class VirtualDJServer extends EventEmitter2 {
         case eventNames.connected:
           this.connected = true;
           this.logger.log(`^gconnected`);
-          applySnapshot(statusStore, { ...statusStore, virtualDJOS2L: true });
           this.emit(eventNames.connected);
           break;
         case eventNames.data:
@@ -37,7 +35,6 @@ export class VirtualDJServer extends EventEmitter2 {
         case eventNames.disconnected:
           this.connected = false;
           this.logger.log(`^rdisconnected`);
-          applySnapshot(statusStore, { ...statusStore, virtualDJOS2L: false });
           this.emit(eventNames.disconnected);
           break;
         default:

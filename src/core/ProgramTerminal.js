@@ -9,6 +9,7 @@ import termkit from 'terminal-kit';
 export const term = termkit.terminal;
 
 const version = process.env.npm_package_version;
+// const defaultTextProps = { leftPadding: ' ', rightPadding: ' ', attr: { contentHasMarkup: true } };
 const defaultTextProps = { leftPadding: ' ', rightPadding: ' ', attr: { contentHasMarkup: true } };
 const virtualDJText = '^mVirtualDJ';
 const pioneerText = '^cPioneer';
@@ -44,12 +45,21 @@ export default class ProgramTerminal extends EventEmitter2 {
             id: 'status-row',
             height: 3,
             columns: [
+              { id: names.statusVirtualDJO2L },
+              { id: names.pioneerDJLinkPro },
+              { id: names.statusResolumeOSC },
+              { id: names.streamDeck },
+              { id: names.abletonLinks }
+            ]
+          },
+          {
+            id: 'status-row-2',
+            height: 3,
+            columns: [
               { id: names.masterDeck },
               { id: names.mainBPM },
               { id: names.virtualDJOrPioneer },
-              { id: names.statusVirtualDJO2L },
-              { id: names.pioneerDJLinkPro },
-              { id: names.statusResolumeOSC }
+              { id: names.abletonForSync }
             ]
           },
           {
@@ -88,6 +98,9 @@ export default class ProgramTerminal extends EventEmitter2 {
     this.pioneerDJLinkProText = this.createText(document, names.pioneerDJLinkPro);
     this.virtualDJStatusText = this.createText(document, names.statusVirtualDJO2L);
     this.resolumeOSCText = this.createText(document, names.statusResolumeOSC);
+    this.streamDeckText = this.createText(document, names.streamDeck);
+    this.abletonLinksText = this.createText(document, names.abletonLinks);
+    this.abletonForSyncText = this.createText(document, names.abletonForSync);
 
     this.vdjDecks = [{}, {}];
     this.createDeck(this.vdjDecks, document, 0, names.vdjDeck1);
@@ -98,7 +111,7 @@ export default class ProgramTerminal extends EventEmitter2 {
     this.createDeck(this.pioneerDecks, document, 1, names.pioneerDeck2);
 
     this.logText = this.createTextBox(document, names.log, '');
-    this.commandsText = this.createText(document, names.commands, { content: '^gQ^wuit ^-|^: ^gT^woggle Primary ^-|^:', contentHasMarkup: true });
+    this.commandsText = this.createText(document, names.commands, { content: '^gQ^:uit ^-|^: Toggle ^gP^:rimary ^-|^: Toggle ^gS^:ync ^-|^: ^gR^:esync ^-|^:', contentHasMarkup: true });
 
     onSnapshot(stores.status, (snapshot) => {
       this.updateTerminalFromStatus(snapshot);
@@ -152,11 +165,14 @@ export default class ProgramTerminal extends EventEmitter2 {
 
   updateTerminalFromStatus (globalStatus) {
     this.masterDeck.setContent(`Master Deck: ${this.getDeckLabel(globalStatus.masterDeck)}`, true);
-    this.mainBPM.setContent(`BPM: ${globalStatus.mainBPM}`, true);
+    this.mainBPM.setContent(`BPM: ${this.toFixedString(globalStatus.mainBPM, 2)}`, true);
     this.virtualDJOrPioneerText.setContent(`Primary: ${(globalStatus.virtualDJOrPioneer ? virtualDJText : pioneerText)}`, true);
-    this.pioneerDJLinkProText.setContent(`Pioneer Pro DJ Link: ${this.trueFalseColor(globalStatus.pioneerProDJLink)}`, true);
-    this.virtualDJStatusText.setContent(`VirtualDJ OS2L: ${this.trueFalseColor(globalStatus.virtualDJOS2L)}`, true);
-    this.resolumeOSCText.setContent(`Resolume Web: ${this.trueFalseColor(globalStatus.resolumeWeb)}`, true);
+    this.pioneerDJLinkProText.setContent(`Pioneer: ${this.trueFalseColor(globalStatus.pioneerProDJLink)}`, true);
+    this.virtualDJStatusText.setContent(`VirtualDJ: ${this.trueFalseColor(globalStatus.virtualDJOS2L)}`, true);
+    this.resolumeOSCText.setContent(`Resolume: ${this.trueFalseColor(globalStatus.resolumeWeb)}`, true);
+    this.streamDeckText.setContent(`StreamDeck: ${this.trueFalseColor(globalStatus.streamDeck)}`, true);
+    this.abletonLinksText.setContent(`Ableton: ${this.coloredText(globalStatus.abletonLinks, this.trueFalseColorDelegate)}`, true);
+    this.abletonForSyncText.setContent(`Sync: ${globalStatus.abletonForSync ? '^mAbleton' : '^bResolume'}`, true);
   }
 
   updateTerminalFromLogger () {
@@ -197,7 +213,7 @@ export default class ProgramTerminal extends EventEmitter2 {
     decks[deckNr].text.setContent(`^w^-[^:${deckLabel}^w^-]^: ${title}`, true);
     decks[deckNr].master.setContent(`^Y${deck.masterdeck === 'on' ? 'M' : ''}`, true);
     decks[deckNr].level.setContent(`${this.toFixedString(deck.level, 2)}`, true);
-    decks[deckNr].bpm.setContent(`${this.toFixedString(deck.get_bpm)}`, true);
+    decks[deckNr].bpm.setContent(`${this.toFixedString(deck.get_bpm, 2)}`, true);
     decks[deckNr].beatPos.setContent(`${this.toFixedString(deck.get_beatpos, 2)}`, true);
     // TODO: Use better method to turn timestamp into string, can go into negative as well
     decks[deckNr].elapsed.setContent(`${moment(Math.max(deck.get_time - (16 * 3600 * 1000))).format('HH:mm:ss.SSS')}`, true);
@@ -218,8 +234,11 @@ export default class ProgramTerminal extends EventEmitter2 {
         case 'q':
           this.quit();
           break;
-        case 't':
+        case 'p':
           this.emit('togglePrimary');
+          break;
+        case 's':
+          this.emit('toggleSync');
           break;
         case 'r':
           this.emit('resync');
@@ -242,11 +261,22 @@ export default class ProgramTerminal extends EventEmitter2 {
     term.processExit();
   }
 
-  trueFalseColor (value) {
-    return value ? '^gtrue' : '^rfalse';
+  coloredText (value, colorPropsDelegate) {
+    if (colorPropsDelegate) {
+      value = colorPropsDelegate(value) + value + '^:';
+    }
+    return value;
   }
 
-  toFixedString (num) {
-    return (Math.round(num * 100) / 100).toFixed(2);
+  trueFalseColor (value) {
+    return this.coloredText(value, this.trueFalseColorDelegate);
+  }
+
+  trueFalseColorDelegate (value) {
+    return value ? '^g' : '^r';
+  }
+
+  toFixedString (num, digits) {
+    return (Math.round(num * 100) / 100).toFixed(digits);
   }
 }
